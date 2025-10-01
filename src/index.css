@@ -8,89 +8,121 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Francachela Brand Colors - HSL format */
+    --background: 240 11% 94%; /* #EFF1F2 */
+    --foreground: 240 26% 14%; /* #1F1D2E */
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 240 26% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 240 26% 14%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 235 34% 25%; /* #293155 */
+    --primary-foreground: 240 11% 94%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 250 26% 20%; /* #322B42 */
+    --secondary-foreground: 240 11% 94%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 250 11% 75%; /* #BBBAC5 */
+    --muted-foreground: 240 26% 14%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 235 34% 25%;
+    --accent-foreground: 240 11% 94%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 240 11% 94%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    --warning: 38 92% 50%;
+    --warning-foreground: 240 26% 14%;
 
-    --sidebar-background: 0 0% 98%;
+    --border: 250 11% 85%;
+    --input: 250 11% 85%;
+    --ring: 235 34% 25%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --radius: 0.75rem;
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* POS Specific */
+    --pos-button: 235 34% 25%;
+    --pos-button-hover: 235 34% 30%;
+    --pos-highlight: 142 71% 45%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(235 34% 25%), hsl(250 26% 20%));
+    --gradient-accent: linear-gradient(135deg, hsl(142 71% 45%), hsl(142 71% 55%));
+    
+    /* Shadows */
+    --shadow-soft: 0 2px 8px hsl(235 34% 25% / 0.08);
+    --shadow-medium: 0 4px 16px hsl(235 34% 25% / 0.12);
+    --shadow-strong: 0 8px 32px hsl(235 34% 25% / 0.16);
 
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 240 26% 14%;
+    --sidebar-primary: 235 34% 25%;
+    --sidebar-primary-foreground: 240 11% 94%;
+    --sidebar-accent: 240 11% 94%;
+    --sidebar-accent-foreground: 240 26% 14%;
+    --sidebar-border: 250 11% 85%;
+    --sidebar-ring: 235 34% 25%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 240 26% 14%; /* #1F1D2E */
+    --foreground: 240 11% 94%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 250 26% 20%; /* #322B42 */
+    --card-foreground: 240 11% 94%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 250 26% 20%;
+    --popover-foreground: 240 11% 94%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 240 11% 94%;
+    --primary-foreground: 240 26% 14%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 235 34% 25%;
+    --secondary-foreground: 240 11% 94%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 250 11% 35%;
+    --muted-foreground: 250 11% 75%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 235 34% 35%;
+    --accent-foreground: 240 11% 94%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 240 11% 94%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 240 26% 14%;
+
+    --border: 250 11% 30%;
+    --input: 250 11% 30%;
+    --ring: 240 11% 94%;
+
+    --pos-button: 240 11% 94%;
+    --pos-button-hover: 240 11% 88%;
+    --pos-highlight: 142 71% 45%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(250 26% 20%), hsl(240 26% 14%));
+    --gradient-accent: linear-gradient(135deg, hsl(142 71% 45%), hsl(142 71% 55%));
+
+    --shadow-soft: 0 2px 8px hsl(0 0% 0% / 0.2);
+    --shadow-medium: 0 4px 16px hsl(0 0% 0% / 0.3);
+    --shadow-strong: 0 8px 32px hsl(0 0% 0% / 0.4);
+
+    --sidebar-background: 250 26% 20%;
+    --sidebar-foreground: 240 11% 94%;
+    --sidebar-primary: 240 11% 94%;
+    --sidebar-primary-foreground: 240 26% 14%;
+    --sidebar-accent: 240 26% 14%;
+    --sidebar-accent-foreground: 240 11% 94%;
+    --sidebar-border: 250 11% 30%;
+    --sidebar-ring: 240 11% 94%;
   }
 }
 
@@ -100,6 +132,44 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+
+  /* POS Tactile Button Styles */
+  .pos-button {
+    @apply rounded-xl px-6 py-4 font-semibold transition-all duration-200;
+    @apply active:scale-95 hover:shadow-md;
+  }
+
+  .pos-button-primary {
+    @apply bg-primary text-primary-foreground hover:opacity-90;
+  }
+
+  .pos-button-success {
+    @apply bg-success text-success-foreground hover:opacity-90;
+  }
+
+  /* Touch-friendly minimum sizes */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Smooth transitions */
+  .smooth-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-muted/20 rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-muted rounded-full hover:bg-muted/80;
   }
 }
