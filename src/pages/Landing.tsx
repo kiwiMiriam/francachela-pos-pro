@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MessageCircle, Wine, Gift, Star } from "lucide-react";
+import { MessageCircle, Wine, Gift, Star, LogIn } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function Landing() {
   const featuredProducts = [
@@ -20,6 +21,19 @@ export default function Landing() {
       {/* Hero Section */}
       <header className="relative overflow-hidden bg-primary text-primary-foreground">
         <div className="absolute inset-0 bg-gradient-to-r from-primary to-secondary opacity-90"></div>
+        <div className="absolute top-4 right-4 z-20">
+          <Button 
+            size="sm" 
+            variant="secondary"
+            className="gap-2"
+            asChild
+          >
+            <Link to="/home">
+              <LogIn className="h-4 w-4" />
+              Sistema
+            </Link>
+          </Button>
+        </div>
         <div className="relative z-10 container mx-auto px-4 py-20 text-center">
           <div className="inline-flex items-center gap-2 mb-4">
             <Wine className="h-12 w-12" />

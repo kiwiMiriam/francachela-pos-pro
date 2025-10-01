@@ -1,4 +1,4 @@
-import { ShoppingCart, LayoutDashboard, Package, Users, Gift, Home } from "lucide-react";
+import { ShoppingCart, LayoutDashboard, Package, Users, Gift, Home, TrendingUp } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
   Sidebar,
@@ -12,12 +12,13 @@ import {
 } from "@/components/ui/sidebar";
 
 const menuItems = [
+  { title: "Inicio", url: "/home", icon: Home },
   { title: "Punto de Venta", url: "/pos", icon: ShoppingCart },
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Productos", url: "/productos", icon: Package },
+  { title: "Inventario", url: "/productos", icon: Package },
   { title: "Clientes", url: "/clientes", icon: Users },
+  { title: "Ventas", url: "/ventas", icon: TrendingUp },
   { title: "Promociones", url: "/promociones", icon: Gift },
-  { title: "Catálogo Público", url: "/", icon: Home },
 ];
 
 export function AppSidebar() {
