@@ -16,7 +16,7 @@ interface POSContextType {
   createTicket: () => void;
   switchTicket: (id: string) => void;
   closeTicket: (id: string) => void;
-  addItem: (productId: number, productName: string, price: number) => void;
+  addItem: (productId: number, productName: string, price: number, pointsValue?: number) => void;
   updateItemQuantity: (productId: number, delta: number) => void;
   removeItem: (productId: number) => void;
   setTicketClient: (clientId?: number, clientName?: string) => void;
@@ -57,7 +57,7 @@ export function POSProvider({ children }: { children: React.ReactNode }) {
   }, [tickets, activeTicketId]);
 
   const addItem = useCallback(
-    (productId: number, productName: string, price: number) => {
+    (productId: number, productName: string, price: number, pointsValue: number = 0) => {
       setTickets(prev =>
         prev.map(ticket => {
           if (ticket.id !== activeTicketId) return ticket;
@@ -89,6 +89,7 @@ export function POSProvider({ children }: { children: React.ReactNode }) {
                 quantity: 1,
                 price,
                 subtotal: price,
+                pointsValue,
               },
             ],
           };

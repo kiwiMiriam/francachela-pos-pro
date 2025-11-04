@@ -32,6 +32,7 @@ export interface SaleItem {
   quantity: number;
   price: number;
   subtotal: number;
+  pointsValue: number;
 }
 
 export interface Sale {
@@ -155,6 +156,21 @@ export interface InventoryStats {
   lowStock: number;
   outOfStock: number;
   toReorder: number;
+}
+
+export interface InventoryMovement {
+  id: number;
+  HORA: string;
+  CODIGO_BARRA?: string;
+  DESCRIPCION: string;
+  COSTO: number;
+  PRECIO_VENTA: number;
+  EXISTENCIA: number;
+  INV_MINIMO: number;
+  TIPO: 'salida' | 'ajuste' | 'entrada';
+  CANTIDAD: number;
+  CAJERO: string;
+  PROVEEDOR?: string;
 }
 
 export interface SalesStats {

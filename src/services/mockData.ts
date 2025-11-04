@@ -36,8 +36,8 @@ export const mockSales: Sale[] = [
     clientId: 1,
     clientName: 'Juan Pérez',
     items: [
-      { productId: 1, productName: 'Inca Kola 500ml', quantity: 2, price: 3.50, subtotal: 7.00 },
-      { productId: 3, productName: 'Chips Lays 180g', quantity: 1, price: 5.00, subtotal: 5.00 },
+      { productId: 1, productName: 'Inca Kola 500ml', quantity: 2, price: 3.50, subtotal: 7.00, pointsValue: 3 },
+      { productId: 3, productName: 'Chips Lays 180g', quantity: 1, price: 5.00, subtotal: 5.00, pointsValue: 5 },
     ],
     subtotal: 12.00,
     discount: 0,
@@ -53,7 +53,7 @@ export const mockSales: Sale[] = [
     clientId: 2,
     clientName: 'María García',
     items: [
-      { productId: 5, productName: 'Cerveza Pilsen 330ml', quantity: 6, price: 4.00, subtotal: 24.00 },
+      { productId: 5, productName: 'Cerveza Pilsen 330ml', quantity: 6, price: 4.00, subtotal: 24.00, pointsValue: 4 },
     ],
     subtotal: 24.00,
     discount: 2.00,
