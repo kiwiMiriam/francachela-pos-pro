@@ -18,7 +18,7 @@ interface POSContextType {
   createTicket: () => void;
   switchTicket: (id: string) => void;
   closeTicket: (id: string) => void;
-  addItem: (productId: number, productName: string, price: number, pointsValue?: number) => void;
+  addItem: (productId: number, productName: string, price: number, pointsValue?: number, isWholesale?: boolean) => void;
   updateItemQuantity: (productId: number, delta: number) => void;
   removeItem: (productId: number) => void;
   setTicketClient: (clientId?: number, clientName?: string) => void;
@@ -59,18 +59,23 @@ export function POSProvider({ children }: { children: React.ReactNode }) {
   }, [tickets, activeTicketId]);
 
   const addItem = useCallback(
-    (productId: number, productName: string, price: number, pointsValue: number = 0) => {
+    (productId: number, productName: string, price: number, pointsValue: number = 0, isWholesale: boolean = false) => {
       setTickets(prev =>
         prev.map(ticket => {
           if (ticket.id !== activeTicketId) return ticket;
           
-          const existingItem = ticket.items.find(item => item.productId === productId);
+          // Crear un identificador único que incluya si es mayoreo o no
+          const itemKey = `${productId}_${isWholesale ? 'wholesale' : 'retail'}`;
+          const existingItem = ticket.items.find(item => 
+            item.productId === productId && 
+            ((item as any).isWholesale === isWholesale)
+          );
           
           if (existingItem) {
             return {
               ...ticket,
               items: ticket.items.map(item =>
-                item.productId === productId
+                item.productId === productId && ((item as any).isWholesale === isWholesale)
                   ? {
                       ...item,
                       quantity: item.quantity + 1,
@@ -87,12 +92,13 @@ export function POSProvider({ children }: { children: React.ReactNode }) {
               ...ticket.items,
               {
                 productId,
-                productName,
+                productName: isWholesale ? `${productName} (Mayoreo)` : productName,
                 quantity: 1,
                 price,
                 subtotal: price,
                 pointsValue,
-              },
+                isWholesale,
+              } as any,
             ],
           };
         })

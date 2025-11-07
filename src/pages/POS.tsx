@@ -71,18 +71,28 @@ export default function POS() {
     if (!product?.name || !product?.barcode) return false;
     
     const searchTermLower = searchTerm.toLowerCase();
+    const productName = product.name || '';
+    const productBarcode = product.barcode || '';
+    
     return (
-      product.name.toLowerCase().includes(searchTermLower) ||
-      product.barcode.includes(searchTerm)
+      productName.toLowerCase().includes(searchTermLower) ||
+      productBarcode.includes(searchTerm)
     );
   });
 
-  const filteredClients = clients.filter(
-    (client) =>
-      client.name.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
-      client.dni?.includes(clientSearchTerm) ||
-      client.phone?.includes(clientSearchTerm)
-  );
+  const filteredClients = clients.filter((client) => {
+    if (!client?.name) return false;
+    
+    const clientName = client.name || '';
+    const clientDni = client.dni || '';
+    const clientPhone = client.phone || '';
+    
+    return (
+      clientName.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+      clientDni.includes(clientSearchTerm) ||
+      clientPhone.includes(clientSearchTerm)
+    );
+  });
 
   const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
   const paginatedProducts = filteredProducts.slice(
@@ -94,12 +104,15 @@ export default function POS() {
   const total = getTicketTotal();
   const pointsEarned = activeTicket ? calculateTotalPoints(activeTicket.items) : 0;
 
-  const handleAddProduct = (product: Product) => {
+  const handleAddProduct = (product: Product, isWholesale: boolean = false) => {
     const pointsValue = calculateProductPoints(product);
-    addItem(product.id, product.name, product.price, pointsValue);
+    const price = isWholesale && product.wholesalePrice ? product.wholesalePrice : product.price;
+    const priceType = isWholesale ? 'Mayoreo' : 'Normal';
+    
+    addItem(product.id, product.name, price, pointsValue, isWholesale);
     toast({
       title: 'Producto agregado',
-      description: `${product.name} agregado al ticket`,
+      description: `${product.name} (${priceType}) - S/ ${price.toFixed(2)}`,
     });
   };
 
@@ -493,26 +506,63 @@ export default function POS() {
             paginatedProducts.map((product) => (
               <Card
                 key={product.id}
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => handleAddProduct(product)}
+                className="cursor-pointer hover:shadow-md transition-shadow group"
               >
                 <CardContent className="p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-sm truncate mb-1">{product.name}</h3>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-primary">
-                          S/ {product.price.toFixed(2)}
-                        </span>
-                        <Badge variant={product.stock > 10 ? 'default' : 'destructive'} className="text-xs">
-                          {product.stock}
-                        </Badge>
+                      <div className="flex flex-col gap-1 mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Normal:</span>
+                          <span className="text-lg font-bold text-primary">
+                            S/ {product.price?.toFixed(2) || '0.00'}
+                          </span>
+                        </div>
+                        {product.wholesalePrice && product.wholesalePrice > 0 && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">Mayoreo:</span>
+                            <span className="text-base font-semibold text-green-600">
+                              S/ {product.wholesalePrice.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {calculateProductPoints(product)} pts
-                      </p>
+                      <Badge variant={product.stock > 10 ? 'default' : 'destructive'} className="text-xs">
+                        Stock: {product.stock || 0}
+                      </Badge>
+                      {product.pointsValue && product.pointsValue > 0 && (
+                        <span className="text-xs text-primary ml-2">
+                          +{product.pointsValue} pts
+                        </span>
+                      )}
                     </div>
-                    <Plus className="h-5 w-5 text-primary flex-shrink-0" />
+                  </div>
+                  {/* Botones de acción */}
+                  <div className="flex gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddProduct(product, false);
+                      }}
+                    >
+                      Normal
+                    </Button>
+                    {product.wholesalePrice && product.wholesalePrice > 0 && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="flex-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddProduct(product, true);
+                        }}
+                      >
+                        Mayoreo
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>

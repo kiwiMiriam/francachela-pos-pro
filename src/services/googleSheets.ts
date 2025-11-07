@@ -35,6 +35,115 @@ interface SheetOperation {
 }
 
 /**
+ * Mapea datos de Sheet a formato TypeScript
+ */
+function mapSheetToProduct(sheetData: any): Product {
+  return {
+    id: sheetData.ID || sheetData.id,
+    name: sheetData.PRODUCTO_DESCRIPCION || sheetData.name || '',
+    barcode: sheetData.CODIGO_BARRA || sheetData.barcode || '',
+    description: sheetData.DESCRIPCION || sheetData.description,
+    image: sheetData.IMAGEN || sheetData.image,
+    cost: parseFloat(sheetData.COSTO || sheetData.cost || 0),
+    price: parseFloat(sheetData.PRECIO || sheetData.price || 0),
+    wholesalePrice: parseFloat(sheetData.PRECIO_MAYOREO || sheetData.wholesalePrice || 0),
+    stock: parseInt(sheetData.CANTIDAD_ACTUAL || sheetData.stock || 0),
+    minStock: parseInt(sheetData.CANTIDAD_MINIMA || sheetData.minStock || 0),
+    supplier: sheetData.PROVEEDOR || sheetData.supplier,
+    category: sheetData.CATEGORIA || sheetData.category || '',
+    pointsValue: parseInt(sheetData.VALOR_PUNTOS || sheetData.pointsValue || 0),
+    showInCatalog: sheetData.MOSTRAR === 'SI' || sheetData.MOSTRAR === true || sheetData.showInCatalog === true,
+    useInventory: sheetData.USA_INVENTARIO === 'SI' || sheetData.USA_INVENTARIO === true || sheetData.useInventory === true,
+  };
+}
+
+function mapSheetToClient(sheetData: any): Client {
+  return {
+    id: sheetData.ID || sheetData.id,
+    name: sheetData.NOMBRE || sheetData.name || '',
+    dni: sheetData.DNI || sheetData.dni || '',
+    phone: sheetData.TELEFONO || sheetData.phone || '',
+    email: sheetData.EMAIL || sheetData.email,
+    address: sheetData.DIRECCION || sheetData.address,
+    birthday: sheetData.FECHA_NACIMIENTO || sheetData.birthday,
+    points: parseInt(sheetData.PUNTOS_ACUMULADOS || sheetData.points || 0),
+  };
+}
+
+function mapSheetToSale(sheetData: any): Sale {
+  let items = [];
+  try {
+    items = typeof sheetData.LISTA_PRODUCTOS === 'string' 
+      ? JSON.parse(sheetData.LISTA_PRODUCTOS)
+      : sheetData.LISTA_PRODUCTOS || sheetData.items || [];
+  } catch (e) {
+    console.error('Error parsing sale items:', e);
+  }
+
+  return {
+    id: sheetData.ID || sheetData.id,
+    ticketNumber: sheetData.TICKET_ID || sheetData.ticketNumber || '',
+    date: sheetData.FECHA || sheetData.date || new Date().toISOString(),
+    clientId: sheetData.CLIENTE_ID || sheetData.clientId,
+    clientName: sheetData.CLIENTE_NOMBRE || sheetData.clientName,
+    items: items,
+    subtotal: parseFloat(sheetData.SUB_TOTAL || sheetData.subtotal || 0),
+    discount: parseFloat(sheetData.DESCUENTO || sheetData.discount || 0),
+    total: parseFloat(sheetData.TOTAL || sheetData.total || 0),
+    paymentMethod: sheetData.METODO_PAGO || sheetData.paymentMethod || 'Efectivo',
+    notes: sheetData.COMENTARIO || sheetData.notes,
+    cashier: sheetData.CAJERO || sheetData.cashier || '',
+    status: sheetData.ESTADO || sheetData.status || 'completada',
+    pointsEarned: parseInt(sheetData.PUNTOS_OTORGADOS || sheetData.pointsEarned || 0),
+    pointsUsed: parseInt(sheetData.PUNTOS_USADOS || sheetData.pointsUsed || 0),
+  };
+}
+
+function mapSheetToPromotion(sheetData: any): Promotion {
+  let productIds = [];
+  try {
+    productIds = typeof sheetData.PRODUCTOS_ID === 'string'
+      ? JSON.parse(sheetData.PRODUCTOS_ID)
+      : sheetData.PRODUCTOS_ID || sheetData.productIds || [];
+  } catch (e) {
+    console.error('Error parsing promotion productIds:', e);
+  }
+
+  return {
+    id: sheetData.ID || sheetData.id,
+    name: sheetData.NOMBRE || sheetData.name || '',
+    description: sheetData.DESCRIPCION || sheetData.description || '',
+    type: sheetData.TIPO || sheetData.type || 'percentage',
+    value: parseFloat(sheetData.VALOR || sheetData.value || 0),
+    productIds: productIds,
+    startDate: sheetData.FECHA_INICIO || sheetData.startDate || new Date().toISOString(),
+    endDate: sheetData.FECHA_FIN || sheetData.endDate || new Date().toISOString(),
+    active: sheetData.ACTIVO === 'SI' || sheetData.ACTIVO === true || sheetData.active === true,
+  };
+}
+
+function mapSheetToCombo(sheetData: any): Combo {
+  let products = [];
+  try {
+    products = typeof sheetData.PRODUCTOS === 'string'
+      ? JSON.parse(sheetData.PRODUCTOS)
+      : sheetData.PRODUCTOS || sheetData.products || [];
+  } catch (e) {
+    console.error('Error parsing combo products:', e);
+  }
+
+  return {
+    id: sheetData.ID || sheetData.id,
+    name: sheetData.NOMBRE || sheetData.name || '',
+    description: sheetData.DESCRIPCION || sheetData.description,
+    products: products,
+    originalPrice: parseFloat(sheetData.PRECIO_ORIGINAL || sheetData.originalPrice || 0),
+    comboPrice: parseFloat(sheetData.PRECIO_COMBO || sheetData.comboPrice || 0),
+    active: sheetData.ACTIVO === 'SI' || sheetData.ACTIVO === true || sheetData.active === true,
+  };
+}
+
+/**
  * Ejecuta una operación en Google Sheets
  */
 async function executeSheetOperation<T>(operation: SheetOperation): Promise<T> {
@@ -122,10 +231,13 @@ async function executeSheetOperation<T>(operation: SheetOperation): Promise<T> {
  * Servicio de productos en Google Sheets
  */
 export const googleSheetsProducts = {
-  getAll: () => executeSheetOperation<Product[]>({
-    action: 'read',
-    sheet: 'Productos',
-  }),
+  getAll: async () => {
+    const data = await executeSheetOperation<any[]>({
+      action: 'read',
+      sheet: 'Productos',
+    });
+    return data.map(mapSheetToProduct);
+  },
 
   getById: (id: number) => executeSheetOperation<Product>({
     action: 'read',
@@ -157,10 +269,13 @@ export const googleSheetsProducts = {
  * Servicio de clientes en Google Sheets
  */
 export const googleSheetsClients = {
-  getAll: () => executeSheetOperation<Client[]>({
-    action: 'read',
-    sheet: 'Clientes',
-  }),
+  getAll: async () => {
+    const data = await executeSheetOperation<any[]>({
+      action: 'read',
+      sheet: 'Clientes',
+    });
+    return data.map(mapSheetToClient);
+  },
 
   getById: (id: number) => executeSheetOperation<Client>({
     action: 'read',
@@ -196,10 +311,13 @@ export const googleSheetsClients = {
  * Servicio de ventas en Google Sheets
  */
 export const googleSheetsSales = {
-  getAll: () => executeSheetOperation<Sale[]>({
-    action: 'read',
-    sheet: 'Ventas',
-  }),
+  getAll: async () => {
+    const data = await executeSheetOperation<any[]>({
+      action: 'read',
+      sheet: 'Ventas',
+    });
+    return data.map(mapSheetToSale);
+  },
 
   getById: (id: number) => executeSheetOperation<Sale>({
     action: 'read',
@@ -262,10 +380,13 @@ export const googleSheetsInventory = {
  * Servicio de promociones en Google Sheets
  */
 export const googleSheetsPromotions = {
-  getAll: () => executeSheetOperation<Promotion[]>({
-    action: 'read',
-    sheet: 'Promociones',
-  }),
+  getAll: async () => {
+    const data = await executeSheetOperation<any[]>({
+      action: 'read',
+      sheet: 'Promociones',
+    });
+    return data.map(mapSheetToPromotion);
+  },
 
   create: (promotion: Omit<Promotion, 'id'>) => executeSheetOperation<Promotion>({
     action: 'write',
@@ -291,10 +412,13 @@ export const googleSheetsPromotions = {
  * Servicio de combos en Google Sheets
  */
 export const googleSheetsCombos = {
-  getAll: () => executeSheetOperation<Combo[]>({
-    action: 'read',
-    sheet: 'Combos',
-  }),
+  getAll: async () => {
+    const data = await executeSheetOperation<any[]>({
+      action: 'read',
+      sheet: 'Combos',
+    });
+    return data.map(mapSheetToCombo);
+  },
 
   create: (combo: Omit<Combo, 'id'>) => executeSheetOperation<Combo>({
     action: 'write',
