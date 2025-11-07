@@ -39,9 +39,13 @@ ID | USERNAME | PASSWORD | ROL | NOMBRE
 ### Pestaña: **Ventas**
 Crea los siguientes encabezados en la primera fila:
 
+⚠️ **IMPORTANTE**: Los nombres de columnas NO deben tener espacios al final. Usa exactamente estos nombres:
+
 ```
 ID | FECHA | CLIENTE_ID | LISTA_PRODUCTOS | SUB_TOTAL | DESCUENTO | TOTAL | METODO_PAGO | COMENTARIO | CAJERO | ESTADO | PUNTOS_OTORGADOS | PUNTOS_USADOS | TICKET_ID
 ```
+
+**ESTADOS permitidos:** `completada`, `cancelada` (en minúsculas)
 
 **Datos de ejemplo:**
 ```
@@ -57,6 +61,10 @@ ID | FECHA | CLIENTE_ID | LISTA_PRODUCTOS | SUB_TOTAL | DESCUENTO | TOTAL | METO
 ID | PRODUCTO_DESCRIPCION | CODIGO_BARRA | IMAGEN | COSTO | PRECIO | PRECIO_MAYOREO | CANTIDAD_ACTUAL | CANTIDAD_MINIMA | PROVEEDOR | CATEGORIA | VALOR_PUNTOS | MOSTRAR | USA_INVENTARIO
 ```
 
+⚠️ **IMPORTANTE**: 
+- `MOSTRAR` y `USA_INVENTARIO` deben ser `true` o `false` (o `SI`/`NO`)
+- Todos los precios y cantidades deben ser números
+
 **Datos de ejemplo:**
 ```
 1 | Inca Kola 500ml | 7750885005609 | | 2.00 | 3.50 | 3.00 | 150 | 20 | Lindley | Bebidas | 3 | true | true
@@ -70,6 +78,11 @@ ID | PRODUCTO_DESCRIPCION | CODIGO_BARRA | IMAGEN | COSTO | PRECIO | PRECIO_MAYO
 ```
 ID | NOMBRES | APELLIDOS | DNI | FECHA_NACIMIENTO | TELEFONO | FECHA_REGISTRO | PUNTOS_ACUMULADOS | HISTORIAL_COMPRAS | HISTORIAL_CANJES
 ```
+
+⚠️ **IMPORTANTE**: 
+- Usa `NOMBRES` y `APELLIDOS` como campos separados (NO usar solo `NOMBRE`)
+- `TELEFONO` debe incluir el código de país: `+51987654321`
+- `DNI` debe ser un número de 8 dígitos
 
 **Datos de ejemplo:**
 ```
@@ -85,27 +98,34 @@ ID | NOMBRES | APELLIDOS | DNI | FECHA_NACIMIENTO | TELEFONO | FECHA_REGISTRO | 
 ID | NOMBRE | DESCRIPCION | TIPO | DESCUENTO | FECHA_INICIO | FECHA_FIN | ACTIVO
 ```
 
+⚠️ **NOTA**: El campo se llama `DESCUENTO` (no VALOR). Los tipos permitidos son: `percentage`, `fixed`, `2x1`, `3x2`
+
 **Datos de ejemplo:**
 ```
-1 | 2x1 en Bebidas | Lleva 2 bebidas y paga 1 | percentage | 50 | 2025-10-01 | 2025-10-31 | true
+1 | 2x1 en Bebidas | Lleva 2 bebidas y paga 1 | 2x1 | 0 | 2025-10-01 | 2025-10-31 | true
 2 | 20% OFF Snacks | 20% de descuento en todos los snacks | percentage | 20 | 2025-10-01 | 2025-10-15 | true
 3 | S/5 OFF compras >S/50 | S/5 de descuento en compras mayores a S/50 | fixed | 5 | 2025-09-01 | 2025-09-30 | false
-4 | Combo Familiar | 3 productos al precio de 2 | percentage | 33 | 2025-10-01 | 2025-10-31 | true
+4 | Combo Familiar | 3 productos al precio de 2 | 3x2 | 33 | 2025-10-01 | 2025-10-31 | true
 5 | Descuento Cumpleaños | 10% de descuento en tu cumpleaños | percentage | 10 | 2025-01-01 | 2025-12-31 | true
 ```
 
 ### Pestaña: **Combos**
 ```
-ID | NOMBRE | DESCRIPCION | PRODUCTOS | PRECIO | PUNTOS_EXTRA | ACTIVO
+ID | NOMBRE | DESCRIPCION | PRODUCTOS | PRECIO_ORIGINAL | COMBO_PRECIO | PUNTOS_EXTRA | ACTIVE
 ```
+
+⚠️ **IMPORTANTE**: 
+- El campo se llama `COMBO_PRECIO` (con guion bajo, NO `PRECIO_COMBO`)
+- El campo activo se llama `ACTIVE` (en inglés, NO `ACTIVO`)
+- `PRODUCTOS` debe ser un array JSON: `[{"productId":1,"quantity":2}]`
 
 **Datos de ejemplo:**
 ```
-1 | Combo Lonchera | Bebida + Snack + Pan | [{"productId":1,"quantity":1},{"productId":3,"quantity":1}] | 12.00 | 5 | true
-2 | Combo Fiesta | 6 Cervezas + 2 Snacks | [{"productId":5,"quantity":6},{"productId":3,"quantity":2}] | 28.00 | 10 | true
-3 | Combo Familiar | 4 Bebidas + 3 Snacks | [{"productId":2,"quantity":4},{"productId":4,"quantity":3}] | 25.00 | 8 | true
-4 | Combo Desayuno | Café + Pan + Leche | [{"productId":1,"quantity":1},{"productId":7,"quantity":1}] | 10.00 | 3 | true
-5 | Combo Película | 2 Bebidas + 2 Snacks Grandes | [{"productId":2,"quantity":2},{"productId":3,"quantity":2}] | 16.00 | 6 | false
+1 | Combo Lonchera | Bebida + Snack + Pan | [{"productId":1,"quantity":1},{"productId":3,"quantity":1}] | 14.00 | 12.00 | 5 | true
+2 | Combo Fiesta | 6 Cervezas + 2 Snacks | [{"productId":5,"quantity":6},{"productId":3,"quantity":2}] | 34.00 | 28.00 | 10 | true
+3 | Combo Familiar | 4 Bebidas + 3 Snacks | [{"productId":2,"quantity":4},{"productId":4,"quantity":3}] | 28.00 | 25.00 | 8 | true
+4 | Combo Desayuno | Café + Pan + Leche | [{"productId":1,"quantity":1},{"productId":7,"quantity":1}] | 12.00 | 10.00 | 3 | true
+5 | Combo Película | 2 Bebidas + 2 Snacks Grandes | [{"productId":2,"quantity":2},{"productId":3,"quantity":2}] | 19.00 | 16.00 | 6 | false
 ```
 
 ### Pestaña: **Caja**

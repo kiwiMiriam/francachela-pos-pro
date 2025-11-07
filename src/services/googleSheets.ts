@@ -58,11 +58,16 @@ function mapSheetToProduct(sheetData: any): Product {
 }
 
 function mapSheetToClient(sheetData: any): Client {
+  // Manejar nombres y apellidos separados o nombre completo
+  const fullName = sheetData.NOMBRES && sheetData.APELLIDOS 
+    ? `${sheetData.NOMBRES} ${sheetData.APELLIDOS}`.trim()
+    : (sheetData.NOMBRE || sheetData.name || '');
+
   return {
     id: sheetData.ID || sheetData.id,
-    name: sheetData.NOMBRE || sheetData.name || '',
-    dni: sheetData.DNI || sheetData.dni || '',
-    phone: sheetData.TELEFONO || sheetData.phone || '',
+    name: fullName,
+    dni: String(sheetData.DNI || sheetData.dni || ''),
+    phone: String(sheetData.TELEFONO || sheetData.phone || ''),
     email: sheetData.EMAIL || sheetData.email,
     address: sheetData.DIRECCION || sheetData.address,
     birthday: sheetData.FECHA_NACIMIENTO || sheetData.birthday,
@@ -80,22 +85,28 @@ function mapSheetToSale(sheetData: any): Sale {
     console.error('Error parsing sale items:', e);
   }
 
+  // Manejar campos con espacios en blanco (trim all keys)
+  const cleanData: any = {};
+  Object.keys(sheetData).forEach(key => {
+    cleanData[key.trim()] = sheetData[key];
+  });
+
   return {
-    id: sheetData.ID || sheetData.id,
-    ticketNumber: sheetData.TICKET_ID || sheetData.ticketNumber || '',
-    date: sheetData.FECHA || sheetData.date || new Date().toISOString(),
-    clientId: sheetData.CLIENTE_ID || sheetData.clientId,
-    clientName: sheetData.CLIENTE_NOMBRE || sheetData.clientName,
+    id: cleanData.ID || cleanData.id,
+    ticketNumber: cleanData.TICKET_ID || cleanData.ticketNumber || '',
+    date: cleanData.FECHA || cleanData.date || new Date().toISOString(),
+    clientId: cleanData.CLIENTE_ID || cleanData.clientId,
+    clientName: cleanData.CLIENTE_NOMBRE || cleanData.clientName,
     items: items,
-    subtotal: parseFloat(sheetData.SUB_TOTAL || sheetData.subtotal || 0),
-    discount: parseFloat(sheetData.DESCUENTO || sheetData.discount || 0),
-    total: parseFloat(sheetData.TOTAL || sheetData.total || 0),
-    paymentMethod: sheetData.METODO_PAGO || sheetData.paymentMethod || 'Efectivo',
-    notes: sheetData.COMENTARIO || sheetData.notes,
-    cashier: sheetData.CAJERO || sheetData.cashier || '',
-    status: sheetData.ESTADO || sheetData.status || 'completada',
-    pointsEarned: parseInt(sheetData.PUNTOS_OTORGADOS || sheetData.pointsEarned || 0),
-    pointsUsed: parseInt(sheetData.PUNTOS_USADOS || sheetData.pointsUsed || 0),
+    subtotal: parseFloat(cleanData.SUB_TOTAL || cleanData.subtotal || 0),
+    discount: parseFloat(cleanData.DESCUENTO || cleanData.discount || 0),
+    total: parseFloat(cleanData.TOTAL || cleanData.total || 0),
+    paymentMethod: (cleanData.METODO_PAGO || cleanData.paymentMethod || 'Efectivo').trim(),
+    notes: cleanData.COMENTARIO || cleanData.notes,
+    cashier: (cleanData.CAJERO || cleanData.cashier || '').trim(),
+    status: (cleanData.ESTADO || cleanData.status || 'completada').trim() as 'completada' | 'cancelada',
+    pointsEarned: parseInt(cleanData.PUNTOS_OTORGADOS || cleanData.pointsEarned || 0),
+    pointsUsed: parseInt(cleanData.PUNTOS_USADOS || cleanData.pointsUsed || 0),
   };
 }
 
@@ -109,12 +120,15 @@ function mapSheetToPromotion(sheetData: any): Promotion {
     console.error('Error parsing promotion productIds:', e);
   }
 
+  // El sheet usa DESCUENTO en lugar de VALOR
+  const value = parseFloat(sheetData.DESCUENTO || sheetData.VALOR || sheetData.value || 0);
+
   return {
     id: sheetData.ID || sheetData.id,
     name: sheetData.NOMBRE || sheetData.name || '',
     description: sheetData.DESCRIPCION || sheetData.description || '',
-    type: sheetData.TIPO || sheetData.type || 'percentage',
-    value: parseFloat(sheetData.VALOR || sheetData.value || 0),
+    type: (sheetData.TIPO || sheetData.type || 'percentage') as Promotion['type'],
+    value: value,
     productIds: productIds,
     startDate: sheetData.FECHA_INICIO || sheetData.startDate || new Date().toISOString(),
     endDate: sheetData.FECHA_FIN || sheetData.endDate || new Date().toISOString(),
@@ -132,14 +146,20 @@ function mapSheetToCombo(sheetData: any): Combo {
     console.error('Error parsing combo products:', e);
   }
 
+  // El sheet usa COMBO_PRECIO (con guion bajo) y ACTIVE en lugar de ACTIVO
+  const comboPrice = parseFloat(sheetData.COMBO_PRECIO || sheetData.PRECIO_COMBO || sheetData.comboPrice || 0);
+  const isActive = sheetData.ACTIVE === 'SI' || sheetData.ACTIVE === true || 
+                   sheetData.ACTIVO === 'SI' || sheetData.ACTIVO === true || 
+                   sheetData.active === true;
+
   return {
     id: sheetData.ID || sheetData.id,
     name: sheetData.NOMBRE || sheetData.name || '',
-    description: sheetData.DESCRIPCION || sheetData.description,
+    description: sheetData.DESCRIPCION || sheetData.description || '',
     products: products,
     originalPrice: parseFloat(sheetData.PRECIO_ORIGINAL || sheetData.originalPrice || 0),
-    comboPrice: parseFloat(sheetData.PRECIO_COMBO || sheetData.comboPrice || 0),
-    active: sheetData.ACTIVO === 'SI' || sheetData.ACTIVO === true || sheetData.active === true,
+    comboPrice: comboPrice,
+    active: isActive,
   };
 }
 

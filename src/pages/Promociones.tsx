@@ -475,6 +475,27 @@ export default function Promociones() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground mb-3">{combo.description}</p>
+                  
+                  {/* Mostrar productos incluidos en el combo */}
+                  {combo.products && combo.products.length > 0 && (
+                    <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+                      <p className="text-sm font-semibold mb-2">Productos incluidos:</p>
+                      <div className="space-y-1">
+                        {combo.products.map((item: any, index: number) => {
+                          const product = productos.find(p => p.id === item.productId);
+                          return (
+                            <div key={index} className="flex items-center gap-2 text-sm">
+                              <Package className="h-3 w-3 text-muted-foreground" />
+                              <span>
+                                {product?.name || `Producto #${item.productId}`} x {item.quantity}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap items-center gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Precio Original</p>
