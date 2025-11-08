@@ -11,6 +11,7 @@ import { Package, Plus, Pencil, Trash2, Search, ArrowUpDown } from "lucide-react
 import { toast } from "sonner";
 import { productsAPI, inventoryAPI } from "@/services/api";
 import type { Product, InventoryMovement } from "@/types";
+import { ProductCategory, ProductSupplier } from "@/types";
 
 export default function Productos() {
   const [productos, setProductos] = useState<Product[]>([]);
@@ -252,12 +253,22 @@ export default function Productos() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="category">Categoría *</Label>
-                    <Input
-                      id="category"
+                    <Select
                       value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      onValueChange={(value) => setFormData({ ...formData, category: value })}
                       required
-                    />
+                    >
+                      <SelectTrigger id="category">
+                        <SelectValue placeholder="Seleccionar categoría" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.values(ProductCategory).map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {cat}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -307,12 +318,22 @@ export default function Productos() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="supplier">Proveedor *</Label>
-                    <Input
-                      id="supplier"
+                    <Select
                       value={formData.supplier}
-                      onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                      onValueChange={(value) => setFormData({ ...formData, supplier: value })}
                       required
-                    />
+                    >
+                      <SelectTrigger id="supplier">
+                        <SelectValue placeholder="Seleccionar proveedor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.values(ProductSupplier).map((sup) => (
+                          <SelectItem key={sup} value={sup}>
+                            {sup}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="description">Descripción</Label>
@@ -338,8 +359,10 @@ export default function Productos() {
                       id="wholesalePrice"
                       type="number"
                       step="0.01"
-                      value={formData.wholesalePrice}
-                      onChange={(e) => setFormData({ ...formData, wholesalePrice: parseFloat(e.target.value) || 0 })}
+                      min="0"
+                      value={formData.wholesalePrice === 0 ? '' : formData.wholesalePrice}
+                      onChange={(e) => setFormData({ ...formData, wholesalePrice: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
+                      placeholder="0.00"
                     />
                   </div>
                   <div className="space-y-2">
@@ -347,8 +370,10 @@ export default function Productos() {
                     <Input
                       id="pointsValue"
                       type="number"
-                      value={formData.pointsValue}
-                      onChange={(e) => setFormData({ ...formData, pointsValue: parseInt(e.target.value) || 0 })}
+                      min="0"
+                      value={formData.pointsValue === 0 ? '' : formData.pointsValue}
+                      onChange={(e) => setFormData({ ...formData, pointsValue: e.target.value === '' ? 0 : parseInt(e.target.value) })}
+                      placeholder="0"
                     />
                   </div>
                   <div className="flex items-center justify-between">

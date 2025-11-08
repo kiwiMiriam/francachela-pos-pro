@@ -265,18 +265,52 @@ export const googleSheetsProducts = {
     id,
   }),
 
-  create: (product: Omit<Product, 'id'>) => executeSheetOperation<Product>({
-    action: 'write',
-    sheet: 'Productos',
-    data: product,
-  }),
+  create: (product: Omit<Product, 'id'>) => {
+    return executeSheetOperation<Product>({
+      action: 'write',
+      sheet: 'Productos',
+      data: {
+        PRODUCTO_DESCRIPCION: product.name,
+        CODIGO_BARRA: product.barcode,
+        IMAGEN: product.image || '',
+        COSTO: product.cost,
+        PRECIO: product.price,
+        PRECIO_MAYOREO: product.wholesalePrice || 0,
+        CANTIDAD_ACTUAL: product.stock,
+        CANTIDAD_MINIMA: product.minStock,
+        PROVEEDOR: product.supplier,
+        CATEGORIA: product.category,
+        VALOR_PUNTOS: product.pointsValue || 0,
+        MOSTRAR: product.showInCatalog ? 'SI' : 'NO',
+        USA_INVENTARIO: product.useInventory ? 'SI' : 'NO',
+      },
+    });
+  },
 
-  update: (id: number, product: Partial<Product>) => executeSheetOperation<Product>({
-    action: 'update',
-    sheet: 'Productos',
-    id,
-    data: product,
-  }),
+  update: (id: number, product: Partial<Product>) => {
+    const updateData: any = {};
+    
+    if (product.name) updateData.PRODUCTO_DESCRIPCION = product.name;
+    if (product.barcode) updateData.CODIGO_BARRA = product.barcode;
+    if (product.image !== undefined) updateData.IMAGEN = product.image;
+    if (product.cost !== undefined) updateData.COSTO = product.cost;
+    if (product.price !== undefined) updateData.PRECIO = product.price;
+    if (product.wholesalePrice !== undefined) updateData.PRECIO_MAYOREO = product.wholesalePrice;
+    if (product.stock !== undefined) updateData.CANTIDAD_ACTUAL = product.stock;
+    if (product.minStock !== undefined) updateData.CANTIDAD_MINIMA = product.minStock;
+    if (product.supplier) updateData.PROVEEDOR = product.supplier;
+    if (product.category) updateData.CATEGORIA = product.category;
+    if (product.pointsValue !== undefined) updateData.VALOR_PUNTOS = product.pointsValue;
+    if (product.showInCatalog !== undefined) updateData.MOSTRAR = product.showInCatalog ? 'SI' : 'NO';
+    if (product.useInventory !== undefined) updateData.USA_INVENTARIO = product.useInventory ? 'SI' : 'NO';
+    
+    return executeSheetOperation<Product>({
+      action: 'update',
+      sheet: 'Productos',
+      id,
+      data: updateData,
+    });
+  },
 
   delete: (id: number) => executeSheetOperation<{ success: boolean }>({
     action: 'delete',
@@ -303,7 +337,7 @@ export const googleSheetsClients = {
     id,
   }),
 
-  create: (client: Omit<Client, 'id' | 'points'>) => {
+  create: (client: Omit<Client, 'id'>) => {
     // Separar nombre completo en NOMBRES y APELLIDOS
     const nameParts = (client.name || '').trim().split(' ');
     const apellidos = nameParts.length > 1 ? nameParts.slice(-1).join(' ') : '';
@@ -321,7 +355,7 @@ export const googleSheetsClients = {
         DIRECCION: client.address || '',
         FECHA_NACIMIENTO: client.birthday || '',
         FECHA_REGISTRO: new Date().toISOString(),
-        PUNTOS_ACUMULADOS: 0,
+        PUNTOS_ACUMULADOS: (client as any).points || 0,
         HISTORIAL_COMPRAS: '',
         HISTORIAL_CANJES: '',
       },

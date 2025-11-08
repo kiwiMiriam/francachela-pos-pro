@@ -1,6 +1,34 @@
 // Tipos base
 export type PaymentMethod = 'Efectivo' | 'Yape' | 'Plin' | 'Tarjeta';
 
+// Enums para categorías y proveedores
+export enum ProductCategory {
+  BEBIDAS = 'Bebidas',
+  SNACKS = 'Snacks',
+  LACTEOS = 'Lácteos',
+  ABARROTES = 'Abarrotes',
+  LIMPIEZA = 'Limpieza',
+  HIGIENE = 'Higiene Personal',
+  CONFITERIA = 'Confitería',
+  PANADERIA = 'Panadería',
+  CONGELADOS = 'Congelados',
+  OTROS = 'Otros',
+}
+
+export enum ProductSupplier {
+  ALICORP = 'Alicorp',
+  GLORIA = 'Gloria',
+  NESTLE = 'Nestlé',
+  PEPSICO = 'PepsiCo',
+  BACKUS = 'Backus',
+  COCA_COLA = 'Coca-Cola',
+  SAN_FERNANDO = 'San Fernando',
+  LAIVE = 'Laive',
+  ARCOR = 'Arcor',
+  MONDELEZ = 'Mondelez',
+  OTRO = 'Otro',
+}
+
 export interface Product {
   id: number;
   name: string;

@@ -26,6 +26,7 @@ export default function Clientes() {
     email: '',
     address: '',
     birthday: '',
+    points: 0,
   });
 
   useEffect(() => {
@@ -84,6 +85,7 @@ export default function Clientes() {
       email: client.email || '',
       address: client.address || '',
       birthday: client.birthday || '',
+      points: client.points || 0,
     });
     setIsDialogOpen(true);
   };
@@ -97,6 +99,7 @@ export default function Clientes() {
       email: '',
       address: '',
       birthday: '',
+      points: 0,
     });
   };
 
@@ -194,6 +197,17 @@ export default function Clientes() {
                   type="date"
                   value={formData.birthday}
                   onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="points">Puntos Acumulados (Opcional)</Label>
+                <Input
+                  id="points"
+                  type="number"
+                  min="0"
+                  value={formData.points === 0 ? '' : formData.points}
+                  onChange={(e) => setFormData({ ...formData, points: e.target.value === '' ? 0 : parseInt(e.target.value) })}
+                  placeholder="0"
                 />
               </div>
               <DialogFooter>

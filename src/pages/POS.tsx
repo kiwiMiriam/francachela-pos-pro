@@ -162,7 +162,10 @@ export default function POS() {
   const sendWhatsAppMessage = (clientPhone: string, points: number, total: number) => {
     const message = `¡Gracias por tu compra! 🎉\n\nTotal: S/ ${total.toFixed(2)}\nPuntos ganados: ${points}\n\n¡Vuelve pronto!`;
     const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/51${clientPhone}?text=${encodedMessage}`;
+    // Eliminar cualquier '+' o espacios y asegurar que empiece con 51
+    const cleanPhone = clientPhone.replace(/[\s+]/g, '');
+    const phoneWithCountryCode = cleanPhone.startsWith('51') ? cleanPhone : `51${cleanPhone}`;
+    const whatsappUrl = `https://wa.me/${phoneWithCountryCode}?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
   };
 
@@ -387,8 +390,8 @@ export default function POS() {
                         type="number"
                         min="0"
                         step="0.01"
-                        value={discount}
-                        onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                        value={discount === 0 ? '' : discount}
+                        onChange={(e) => setDiscount(e.target.value === '' ? 0 : parseFloat(e.target.value))}
                         placeholder="0.00"
                       />
                       <Button onClick={handleUpdateDiscount} variant="outline" size="sm">

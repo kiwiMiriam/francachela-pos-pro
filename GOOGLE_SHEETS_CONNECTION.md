@@ -64,11 +64,13 @@ ID | PRODUCTO_DESCRIPCION | CODIGO_BARRA | IMAGEN | COSTO | PRECIO | PRECIO_MAYO
 ⚠️ **IMPORTANTE**: 
 - `MOSTRAR` y `USA_INVENTARIO` deben ser `true` o `false` (o `SI`/`NO`)
 - Todos los precios y cantidades deben ser números
+- `CATEGORIA` debe ser uno de: Bebidas, Snacks, Lácteos, Abarrotes, Limpieza, Higiene Personal, Confitería, Panadería, Congelados, Otros
+- `PROVEEDOR` debe ser uno de: Alicorp, Gloria, Nestlé, PepsiCo, Backus, Coca-Cola, San Fernando, Laive, Arcor, Mondelez, Otro
 
 **Datos de ejemplo:**
 ```
-1 | Inca Kola 500ml | 7750885005609 | | 2.00 | 3.50 | 3.00 | 150 | 20 | Lindley | Bebidas | 3 | true | true
-2 | Coca Cola 500ml | 7750885005616 | | 2.00 | 3.50 | 3.00 | 200 | 20 | Lindley | Bebidas | 3 | true | true
+1 | Inca Kola 500ml | 7750885005609 | | 2.00 | 3.50 | 3.00 | 150 | 20 | Coca-Cola | Bebidas | 3 | true | true
+2 | Coca Cola 500ml | 7750885005616 | | 2.00 | 3.50 | 3.00 | 200 | 20 | Coca-Cola | Bebidas | 3 | true | true
 3 | Chips Lays 180g | 7750670000536 | | 3.50 | 5.00 | 4.50 | 80 | 15 | PepsiCo | Snacks | 5 | true | true
 4 | Galletas Oreo | 7622210100672 | | 3.00 | 4.50 | 4.00 | 60 | 10 | Mondelez | Snacks | 4 | true | true
 5 | Cerveza Pilsen 330ml | 7750182003476 | | 2.50 | 4.00 | 3.50 | 120 | 30 | Backus | Bebidas | 4 | true | true
@@ -81,16 +83,17 @@ ID | NOMBRES | APELLIDOS | DNI | FECHA_NACIMIENTO | TELEFONO | FECHA_REGISTRO | 
 
 ⚠️ **IMPORTANTE**: 
 - Usa `NOMBRES` y `APELLIDOS` como campos separados (NO usar solo `NOMBRE`)
-- `TELEFONO` debe incluir el código de país: `+51987654321`
+- `TELEFONO` debe incluir el código de país: `+51987654321` o sin el + (`51987654321`)
 - `DNI` debe ser un número de 8 dígitos
+- `PUNTOS_ACUMULADOS` es opcional al crear un cliente y puede iniciar en 0
 
 **Datos de ejemplo:**
 ```
-1 | Juan | Pérez | 12345678 | 1990-05-15 | +51987654321 | 2025-01-01 | 450 | [] | []
-2 | María | García | 87654321 | 1985-12-20 | +51987654322 | 2025-01-01 | 320 | [] | []
-3 | Carlos | López | 11223344 | 2000-10-05 | +51987654323 | 2025-01-01 | 180 | [] | []
-4 | Ana | Torres | 44332211 | 1992-08-30 | +51987654324 | 2025-01-01 | 520 | [] | []
-5 | Luis | Ramírez | 55667788 | 1988-03-10 | +51987654325 | 2025-01-02 | 0 | [] | []
+1 | Juan | Pérez | 12345678 | 1990-05-15 | 51987654321 | 2025-01-01 | 450 | [] | []
+2 | María | García | 87654321 | 1985-12-20 | 51987654322 | 2025-01-01 | 320 | [] | []
+3 | Carlos | López | 11223344 | 2000-10-05 | 51987654323 | 2025-01-01 | 180 | [] | []
+4 | Ana | Torres | 44332211 | 1992-08-30 | 51987654324 | 2025-01-01 | 520 | [] | []
+5 | Luis | Ramírez | 55667788 | 1988-03-10 | 51987654325 | 2025-01-02 | 0 | [] | []
 ```
 
 ### Pestaña: **Promociones**
@@ -412,8 +415,8 @@ Para comenzar a usar el sistema, agrega algunos datos de ejemplo:
 
 ### Productos (pestaña Productos):
 ```
-1 | Inca Kola 500ml | 7750885005609 | | 2.00 | 3.50 | 3.00 | 150 | 20 | Lindley | Bebidas | 3 | true | true
-2 | Coca Cola 500ml | 7750885005616 | | 2.00 | 3.50 | 3.00 | 200 | 20 | Lindley | Bebidas | 3 | true | true
+1 | Inca Kola 500ml | 7750885005609 | | 2.00 | 3.50 | 3.00 | 150 | 20 | Coca-Cola | Bebidas | 3 | true | true
+2 | Coca Cola 500ml | 7750885005616 | | 2.00 | 3.50 | 3.00 | 200 | 20 | Coca-Cola | Bebidas | 3 | true | true
 3 | Chips Lays 180g | 7750670000536 | | 3.50 | 5.00 | 4.50 | 80 | 15 | PepsiCo | Snacks | 5 | true | true
 4 | Galletas Oreo | 7622210100672 | | 3.00 | 4.50 | 4.00 | 60 | 10 | Mondelez | Snacks | 4 | true | true
 5 | Cerveza Pilsen 330ml | 7750182003476 | | 2.50 | 4.00 | 3.50 | 120 | 30 | Backus | Bebidas | 4 | true | true
@@ -421,11 +424,11 @@ Para comenzar a usar el sistema, agrega algunos datos de ejemplo:
 
 ### Clientes (pestaña Clientes):
 ```
-1 | Juan | Pérez | 12345678 | 1990-05-15 | +51987654321 | 2025-01-01 | 450 | [] | []
-2 | María | García | 87654321 | 1985-12-20 | +51987654322 | 2025-01-01 | 320 | [] | []
-3 | Carlos | López | 11223344 | 2000-10-05 | +51987654323 | 2025-01-01 | 180 | [] | []
-4 | Ana | Torres | 44332211 | 1992-08-30 | +51987654324 | 2025-01-01 | 520 | [] | []
-5 | Luis | Ramírez | 55667788 | 1988-03-10 | +51987654325 | 2025-01-02 | 0 | [] | []
+1 | Juan | Pérez | 12345678 | 1990-05-15 | 51987654321 | 2025-01-01 | 450 | [] | []
+2 | María | García | 87654321 | 1985-12-20 | 51987654322 | 2025-01-01 | 320 | [] | []
+3 | Carlos | López | 11223344 | 2000-10-05 | 51987654323 | 2025-01-01 | 180 | [] | []
+4 | Ana | Torres | 44332211 | 1992-08-30 | 51987654324 | 2025-01-01 | 520 | [] | []
+5 | Luis | Ramírez | 55667788 | 1988-03-10 | 51987654325 | 2025-01-02 | 0 | [] | []
 ```
 
 ---
