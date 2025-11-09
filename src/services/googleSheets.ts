@@ -343,6 +343,11 @@ export const googleSheetsClients = {
     const apellidos = nameParts.length > 1 ? nameParts.slice(-1).join(' ') : '';
     const nombres = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : nameParts[0] || '';
     
+    // Asegurar que el teléfono tenga el prefijo +51
+    const phoneWithPrefix = client.phone.startsWith('+51') || client.phone.startsWith('51') 
+      ? client.phone 
+      : `+51${client.phone}`;
+    
     return executeSheetOperation<Client>({
       action: 'write',
       sheet: 'Clientes',
@@ -350,7 +355,7 @@ export const googleSheetsClients = {
         NOMBRES: nombres,
         APELLIDOS: apellidos,
         DNI: client.dni,
-        TELEFONO: client.phone,
+        TELEFONO: phoneWithPrefix,
         EMAIL: client.email || '',
         DIRECCION: client.address || '',
         FECHA_NACIMIENTO: client.birthday || '',
@@ -373,7 +378,12 @@ export const googleSheetsClients = {
     }
     
     if (client.dni) updateData.DNI = client.dni;
-    if (client.phone) updateData.TELEFONO = client.phone;
+    if (client.phone) {
+      // Asegurar que el teléfono tenga el prefijo +51
+      updateData.TELEFONO = client.phone.startsWith('+51') || client.phone.startsWith('51') 
+        ? client.phone 
+        : `+51${client.phone}`;
+    }
     if (client.email !== undefined) updateData.EMAIL = client.email;
     if (client.address !== undefined) updateData.DIRECCION = client.address;
     if (client.birthday !== undefined) updateData.FECHA_NACIMIENTO = client.birthday;

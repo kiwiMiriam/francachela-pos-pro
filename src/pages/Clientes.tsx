@@ -20,7 +20,8 @@ export default function Clientes() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     dni: '',
     phone: '',
     email: '',
@@ -48,11 +49,32 @@ export default function Clientes() {
     e.preventDefault();
     
     try {
+      // Validar DNI duplicado al crear nuevo cliente
+      if (!editingClient) {
+        const existingClient = clientes.find(c => c.dni === formData.dni);
+        if (existingClient) {
+          toast.error('El DNI ya está registrado');
+          return;
+        }
+      }
+      
+      // Combinar nombres y apellidos
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+      const clientData = {
+        name: fullName,
+        dni: formData.dni,
+        phone: formData.phone,
+        email: formData.email,
+        address: formData.address,
+        birthday: formData.birthday,
+        points: formData.points,
+      };
+      
       if (editingClient) {
-        await clientsAPI.update(editingClient.id, formData);
+        await clientsAPI.update(editingClient.id, clientData);
         toast.success('Cliente actualizado correctamente');
       } else {
-        await clientsAPI.create(formData as any);
+        await clientsAPI.create(clientData as any);
         toast.success('Cliente creado correctamente');
       }
       
@@ -78,10 +100,20 @@ export default function Clientes() {
 
   const openEditDialog = (client: Client) => {
     setEditingClient(client);
+    
+    // Separar nombre completo en nombres y apellidos
+    const nameParts = (client.name || '').trim().split(' ');
+    const lastName = nameParts.length > 1 ? nameParts.slice(-1).join(' ') : '';
+    const firstName = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : nameParts[0] || '';
+    
+    // Limpiar el teléfono del prefijo +51 si existe
+    const cleanPhone = (client.phone || '').replace(/^\+?51/, '');
+    
     setFormData({
-      name: client.name,
+      firstName: firstName,
+      lastName: lastName,
       dni: client.dni,
-      phone: client.phone,
+      phone: cleanPhone,
       email: client.email || '',
       address: client.address || '',
       birthday: client.birthday || '',
@@ -93,7 +125,8 @@ export default function Clientes() {
   const resetForm = () => {
     setEditingClient(null);
     setFormData({
-      name: '',
+      firstName: '',
+      lastName: '',
       dni: '',
       phone: '',
       email: '',
@@ -145,11 +178,22 @@ export default function Clientes() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nombre completo *</Label>
+                <Label htmlFor="firstName">Nombres *</Label>
                 <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  id="firstName"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  placeholder="Juan Carlos"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Apellidos *</Label>
+                <Input
+                  id="lastName"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  placeholder="Pérez García"
                   required
                 />
               </div>
@@ -160,18 +204,25 @@ export default function Clientes() {
                   value={formData.dni}
                   onChange={(e) => setFormData({ ...formData, dni: e.target.value })}
                   maxLength={8}
+                  placeholder="12345678"
                   required
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Teléfono *</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+51987654321"
-                  required
-                />
+                <div className="flex gap-2">
+                  <div className="flex items-center px-3 border rounded-md bg-muted text-muted-foreground">
+                    +51
+                  </div>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
+                    placeholder="987654321"
+                    maxLength={9}
+                    required
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>

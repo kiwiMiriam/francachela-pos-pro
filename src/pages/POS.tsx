@@ -179,10 +179,17 @@ export default function POS() {
       return;
     }
 
+    // Guardar referencia al cliente antes de completar la venta
+    const currentClientId = activeTicket.clientId;
+    
     await completeSale(selectedPaymentMethod, 'Sistema');
     
-    // Enviar WhatsApp si hay cliente
-    const client = clients.find(c => c.id === activeTicket.clientId);
+    // Recargar datos de clientes para obtener los puntos actualizados
+    const updatedClients = await clientsAPI.getAll();
+    setClients(updatedClients);
+    
+    // Enviar WhatsApp si hay cliente (siempre enviar)
+    const client = updatedClients.find(c => c.id === currentClientId);
     if (client && client.phone) {
       sendWhatsAppMessage(client.phone, pointsEarned, total);
     }
