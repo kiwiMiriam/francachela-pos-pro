@@ -29,7 +29,7 @@ Sistema de Punto de Venta completo con integración a Google Sheets como base de
    - ✅ CRUD completo
    - ✅ Código de barras
    - ✅ Gestión de stock
-   - ✅ Stock mínimo y alertas
+   - ✅ Stock mínimo y alertas   
    - ✅ Precio normal y mayoreo
    - ✅ Categorías
    - ✅ Valor en puntos por producto
