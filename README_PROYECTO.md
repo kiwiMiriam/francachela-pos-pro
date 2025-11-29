@@ -1,4 +1,4 @@
-# 🍻 Sistema POS Francachela
+# 🍻 Sistema POS Francachela  -RAMA SOLO CON CONFIGUARACION CON SHEETS
 
 Sistema de Punto de Venta completo con integración a Google Sheets como base de datos.
 
