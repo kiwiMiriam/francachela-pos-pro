@@ -81,6 +81,20 @@ Authorization: Bearer <TOKEN_JWT>
   Método   Endpoint          Descripción
   -------- ----------------- ----------------------------------------
   POST     `/auth/login`     Iniciar sesión
+    ### payload example: 
+        {username: "admin", password: "admin123"}
+
+    ### RESPONSE example:     
+            {
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkbWluIiwic3ViIjoxLCJyb2wiOiJBRE1JTiIsIm5vbWJyZSI6IkFkbWluaXN0cmFkb3IgUHJpbmNpcGFsIiwiaWF0IjoxNzY0NjI4ODgzLCJleHAiOjE3NjQ2MzI0ODN9.YSh06IfKpDHSYE_HQMK1BipSg_mxyUOqIL2jZ6WPYDA",
+                "user": {
+                    "id": 1,
+                    "username": "admin",
+                    "nombre": "Administrador Principal",
+                    "rol": "ADMIN"
+                }
+            }
+
   GET      `/auth/profile`   Obtener perfil del usuario autenticado
 
 ### Ejemplo Login
@@ -126,6 +140,107 @@ curl -X POST http://localhost:3000/auth/login   -H "Content-Type: application/js
           "usaInventario": true
         }
   GET      `/products`        Listar productos
+      ### REPSONSE example: 
+          {
+              "data": [
+                  {
+                      "id": 5,
+                      "productoDescripcion": "Agua Mineral 500ml",
+                      "codigoBarra": "7751271001238",
+                      "imagen": null,
+                      "costo": "0.80",
+                      "precio": "2.00",
+                      "precioMayoreo": "1.50",
+                      "cantidadActual": 200,
+                      "cantidadMinima": 50,
+                      "proveedor": "San Luis",
+                      "categoria": "Bebidas",
+                      "valorPuntos": 2,
+                      "mostrar": true,
+                      "usaInventario": true,
+                      "fechaCreacion": "2025-11-29T15:07:42.539Z",
+                      "fechaActualizacion": "2025-11-29T15:07:42.539Z"
+                  },
+                  {
+                      "id": 4,
+                      "productoDescripcion": "Chicharrón Preparado",
+                      "codigoBarra": "7751271001237",
+                      "imagen": null,
+                      "costo": "8.00",
+                      "precio": "15.00",
+                      "precioMayoreo": "13.00",
+                      "cantidadActual": 50,
+                      "cantidadMinima": 10,
+                      "proveedor": "Cocina Local",
+                      "categoria": "Comida",
+                      "valorPuntos": 15,
+                      "mostrar": true,
+                      "usaInventario": true,
+                      "fechaCreacion": "2025-11-29T15:07:42.530Z",
+                      "fechaActualizacion": "2025-11-29T15:07:42.530Z"
+                  },
+                  {
+                      "id": 3,
+                      "productoDescripcion": "Pisco Quebranta 750ml",
+                      "codigoBarra": "7751271001236",
+                      "imagen": null,
+                      "costo": "25.00",
+                      "precio": "45.00",
+                      "precioMayoreo": "40.00",
+                      "cantidadActual": 30,
+                      "cantidadMinima": 5,
+                      "proveedor": "Viñas Peruanas",
+                      "categoria": "Licores",
+                      "valorPuntos": 45,
+                      "mostrar": true,
+                      "usaInventario": true,
+                      "fechaCreacion": "2025-11-29T15:07:42.520Z",
+                      "fechaActualizacion": "2025-11-29T15:07:42.520Z"
+                  },
+                  {
+                      "id": 2,
+                      "productoDescripcion": "Cerveza Cristal 630ml",
+                      "codigoBarra": "7751271001235",
+                      "imagen": null,
+                      "costo": "3.20",
+                      "precio": "5.50",
+                      "precioMayoreo": "5.00",
+                      "cantidadActual": 80,
+                      "cantidadMinima": 15,
+                      "proveedor": "Backus",
+                      "categoria": "Cervezas",
+                      "valorPuntos": 5,
+                      "mostrar": true,
+                      "usaInventario": true,
+                      "fechaCreacion": "2025-11-29T15:07:42.512Z",
+                      "fechaActualizacion": "2025-11-29T15:07:42.512Z"
+                  },
+                  {
+                      "id": 1,
+                      "productoDescripcion": "Cerveza Pilsen 650ml",
+                      "codigoBarra": "7751271001234",
+                      "imagen": null,
+                      "costo": "3.50",
+                      "precio": "6.00",
+                      "precioMayoreo": "5.50",
+                      "cantidadActual": 100,
+                      "cantidadMinima": 20,
+                      "proveedor": "Backus",
+                      "categoria": "Cervezas",
+                      "valorPuntos": 6,
+                      "mostrar": true,
+                      "usaInventario": true,
+                      "fechaCreacion": "2025-11-29T15:07:42.503Z",
+                      "fechaActualizacion": "2025-11-29T15:07:42.503Z"
+                  }
+              ],
+              "total": 5,
+              "page": 1,
+              "limit": 10,
+              "totalPages": 1,
+              "hasNextPage": false,
+              "hasPrevPage": false
+          }     
   GET      `/products/{id}`   Obtener producto
   GET    `/productos/search`   (Buscar productos por descripción, código de barras, categoría o proveedor con query)
   GET: `/productos/categorias` ( Obtener todas las categorías de productos)
@@ -188,6 +303,275 @@ curl -X POST http://localhost:3000/auth/login   -H "Content-Type: application/js
               "puntosUsados": 10
             }
 | GET    | `/ventas`                                       | Listar todas las ventas    |
+      ### RESPONSE example: 
+                  {
+                      "data": [
+                          {
+                              "id": 5,
+                              "fecha": "2024-01-19T01:30:00.000Z",
+                              "cliente": {
+                                  "id": 5,
+                                  "nombres": "Roberto",
+                                  "apellidos": "Castillo Morales",
+                                  "dni": "55667788",
+                                  "fechaNacimiento": "1982-09-13",
+                                  "telefono": "977889900",
+                                  "fechaRegistro": "2025-11-29T15:07:42.579Z",
+                                  "puntosAcumulados": 178,
+                                  "historialCompras": [],
+                                  "historialCanjes": [],
+                                  "codigoCorto": "RCM005",
+                                  "direccion": "Jr. Independencia 654, Lima",
+                                  "activo": true,
+                                  "fechaCreacion": "2025-11-29T15:07:42.579Z",
+                                  "fechaActualizacion": "2025-11-29T15:07:42.579Z"
+                              },
+                              "clienteId": 5,
+                              "listaProductos": [
+                                  {
+                                      "id": 4,
+                                      "precio": 15,
+                                      "cantidad": 2,
+                                      "subtotal": 30,
+                                      "descripcion": "Chicharrón Preparado"
+                                  },
+                                  {
+                                      "id": 5,
+                                      "precio": 2,
+                                      "cantidad": 4,
+                                      "subtotal": 8,
+                                      "descripcion": "Agua Mineral 500ml"
+                                  }
+                              ],
+                              "subTotal": "38.00",
+                              "descuento": "0.00",
+                              "total": "38.00",
+                              "metodoPago": "EFECTIVO",
+                              "comentario": "Pedido para llevar",
+                              "cajero": "Carlos Rodríguez",
+                              "estado": "COMPLETADO",
+                              "puntosOtorgados": 38,
+                              "puntosUsados": 0,
+                              "ticketId": null,
+                              "tipoCompra": "LOCAL",
+                              "montoRecibido": "0.00",
+                              "vuelto": "0.00",
+                              "fechaCreacion": "2025-11-29T15:07:42.778Z",
+                              "fechaActualizacion": "2025-11-29T15:07:42.778Z"
+                          },
+                          {
+                              "id": 4,
+                              "fecha": "2024-01-17T23:10:00.000Z",
+                              "cliente": {
+                                  "id": 4,
+                                  "nombres": "Ana Sofía",
+                                  "apellidos": "Torres Vega",
+                                  "dni": "44332211",
+                                  "fechaNacimiento": "1995-01-29",
+                                  "telefono": "955443322",
+                                  "fechaRegistro": "2025-11-29T15:07:42.571Z",
+                                  "puntosAcumulados": 67,
+                                  "historialCompras": [],
+                                  "historialCanjes": [],
+                                  "codigoCorto": "AST004",
+                                  "direccion": "Av. Central 321, Lima",
+                                  "activo": true,
+                                  "fechaCreacion": "2025-11-29T15:07:42.571Z",
+                                  "fechaActualizacion": "2025-11-29T15:07:42.571Z"
+                              },
+                              "clienteId": 4,
+                              "listaProductos": [
+                                  {
+                                      "id": 1,
+                                      "precio": 6,
+                                      "cantidad": 1,
+                                      "subtotal": 6,
+                                      "descripcion": "Cerveza Pilsen 650ml"
+                                  },
+                                  {
+                                      "id": 2,
+                                      "precio": 5.5,
+                                      "cantidad": 1,
+                                      "subtotal": 5.5,
+                                      "descripcion": "Cerveza Cristal 630ml"
+                                  }
+                              ],
+                              "subTotal": "11.50",
+                              "descuento": "1.15",
+                              "total": "10.35",
+                              "metodoPago": "PLIN",
+                              "comentario": null,
+                              "cajero": "María González",
+                              "estado": "COMPLETADO",
+                              "puntosOtorgados": 10,
+                              "puntosUsados": 5,
+                              "ticketId": null,
+                              "tipoCompra": "LOCAL",
+                              "montoRecibido": "0.00",
+                              "vuelto": "0.00",
+                              "fechaCreacion": "2025-11-29T15:07:42.773Z",
+                              "fechaActualizacion": "2025-11-29T15:07:42.773Z"
+                          },
+                          {
+                              "id": 3,
+                              "fecha": "2024-01-16T19:20:00.000Z",
+                              "cliente": {
+                                  "id": 3,
+                                  "nombres": "Carlos Alberto",
+                                  "apellidos": "Mendoza Silva",
+                                  "dni": "11223344",
+                                  "fechaNacimiento": "1978-11-07",
+                                  "telefono": "998877665",
+                                  "fechaRegistro": "2025-11-29T15:07:42.563Z",
+                                  "puntosAcumulados": 234,
+                                  "historialCompras": [],
+                                  "historialCanjes": [],
+                                  "codigoCorto": "CAM003",
+                                  "direccion": "Calle Los Pinos 789, Lima",
+                                  "activo": true,
+                                  "fechaCreacion": "2025-11-29T15:07:42.563Z",
+                                  "fechaActualizacion": "2025-11-29T15:07:42.563Z"
+                              },
+                              "clienteId": 3,
+                              "listaProductos": [
+                                  {
+                                      "id": 3,
+                                      "precio": 45,
+                                      "cantidad": 1,
+                                      "subtotal": 45,
+                                      "descripcion": "Pisco Quebranta 750ml"
+                                  },
+                                  {
+                                      "id": 5,
+                                      "precio": 2,
+                                      "cantidad": 2,
+                                      "subtotal": 4,
+                                      "descripcion": "Agua Mineral 500ml"
+                                  }
+                              ],
+                              "subTotal": "49.00",
+                              "descuento": "0.00",
+                              "total": "49.00",
+                              "metodoPago": "TARJETA",
+                              "comentario": null,
+                              "cajero": "Carlos Rodríguez",
+                              "estado": "COMPLETADO",
+                              "puntosOtorgados": 49,
+                              "puntosUsados": 0,
+                              "ticketId": null,
+                              "tipoCompra": "DELIVERY",
+                              "montoRecibido": "0.00",
+                              "vuelto": "0.00",
+                              "fechaCreacion": "2025-11-29T15:07:42.769Z",
+                              "fechaActualizacion": "2025-11-29T15:07:42.769Z"
+                          },
+                          {
+                              "id": 2,
+                              "fecha": "2024-01-15T20:45:00.000Z",
+                              "cliente": {
+                                  "id": 2,
+                                  "nombres": "María Elena",
+                                  "apellidos": "Rodríguez López",
+                                  "dni": "87654321",
+                                  "fechaNacimiento": "1990-07-21",
+                                  "telefono": "912345678",
+                                  "fechaRegistro": "2025-11-29T15:07:42.557Z",
+                                  "puntosAcumulados": 89,
+                                  "historialCompras": [],
+                                  "historialCanjes": [],
+                                  "codigoCorto": "MER002",
+                                  "direccion": "Jr. Las Flores 456, Lima",
+                                  "activo": true,
+                                  "fechaCreacion": "2025-11-29T15:07:42.557Z",
+                                  "fechaActualizacion": "2025-11-29T15:07:42.557Z"
+                              },
+                              "clienteId": 2,
+                              "listaProductos": [
+                                  {
+                                      "id": 2,
+                                      "precio": 5.5,
+                                      "cantidad": 3,
+                                      "subtotal": 16.5,
+                                      "descripcion": "Cerveza Cristal 630ml"
+                                  }
+                              ],
+                              "subTotal": "16.50",
+                              "descuento": "0.00",
+                              "total": "16.50",
+                              "metodoPago": "YAPE",
+                              "comentario": null,
+                              "cajero": "María González",
+                              "estado": "COMPLETADO",
+                              "puntosOtorgados": 16,
+                              "puntosUsados": 0,
+                              "ticketId": null,
+                              "tipoCompra": "LOCAL",
+                              "montoRecibido": "0.00",
+                              "vuelto": "0.00",
+                              "fechaCreacion": "2025-11-29T15:07:42.764Z",
+                              "fechaActualizacion": "2025-11-29T15:07:42.764Z"
+                          },
+                          {
+                              "id": 1,
+                              "fecha": "2024-01-15T17:30:00.000Z",
+                              "cliente": {
+                                  "id": 1,
+                                  "nombres": "Juan Carlos",
+                                  "apellidos": "Pérez García",
+                                  "dni": "12345678",
+                                  "fechaNacimiento": "1985-03-14",
+                                  "telefono": "987654321",
+                                  "fechaRegistro": "2025-11-29T15:07:42.549Z",
+                                  "puntosAcumulados": 150,
+                                  "historialCompras": [],
+                                  "historialCanjes": [],
+                                  "codigoCorto": "JCP001",
+                                  "direccion": "Av. Los Olivos 123, Lima",
+                                  "activo": true,
+                                  "fechaCreacion": "2025-11-29T15:07:42.549Z",
+                                  "fechaActualizacion": "2025-11-29T15:07:42.549Z"
+                              },
+                              "clienteId": 1,
+                              "listaProductos": [
+                                  {
+                                      "id": 1,
+                                      "precio": 6,
+                                      "cantidad": 2,
+                                      "subtotal": 12,
+                                      "descripcion": "Cerveza Pilsen 650ml"
+                                  },
+                                  {
+                                      "id": 4,
+                                      "precio": 15,
+                                      "cantidad": 1,
+                                      "subtotal": 15,
+                                      "descripcion": "Chicharrón Preparado"
+                                  }
+                              ],
+                              "subTotal": "27.00",
+                              "descuento": "2.70",
+                              "total": "24.30",
+                              "metodoPago": "EFECTIVO",
+                              "comentario": "Cliente frecuente",
+                              "cajero": "María González",
+                              "estado": "COMPLETADO",
+                              "puntosOtorgados": 24,
+                              "puntosUsados": 0,
+                              "ticketId": null,
+                              "tipoCompra": "LOCAL",
+                              "montoRecibido": "0.00",
+                              "vuelto": "0.00",
+                              "fechaCreacion": "2025-11-29T15:07:42.755Z",
+                              "fechaActualizacion": "2025-11-29T15:07:42.755Z"
+                          }
+                      ],
+                      "total": 5,
+                      "page": 1,
+                      "limit": 10,
+                      "totalPages": 1,
+                      "hasNextPage": false,
+                      "hasPrevPage": false
+                  }
 | GET    | `/ventas/{id}`                                  | Obtener detalle de venta   |
 | GET    | `/ventas/cliente/{clienteId}`                 | Obtener estadisticas de ventas por rango de fecha|
 | GET    | `/ventas/estadisticas`                 | Obtener ventas de un cliente especifico|
@@ -214,6 +598,102 @@ curl -X POST http://localhost:3000/auth/login   -H "Content-Type: application/js
           "direccion": "Av. Lima 123, San Isidro"
         }
   GET      `/clientes`        Listar clientes
+      ### RESPONSE example: 
+          {
+              "data": [
+                  {
+                      "id": 5,
+                      "nombres": "Roberto",
+                      "apellidos": "Castillo Morales",
+                      "dni": "55667788",
+                      "fechaNacimiento": "1982-09-13",
+                      "telefono": "977889900",
+                      "fechaRegistro": "2025-11-29T15:07:42.579Z",
+                      "puntosAcumulados": 178,
+                      "historialCompras": [],
+                      "historialCanjes": [],
+                      "codigoCorto": "RCM005",
+                      "direccion": "Jr. Independencia 654, Lima",
+                      "activo": true,
+                      "fechaCreacion": "2025-11-29T15:07:42.579Z",
+                      "fechaActualizacion": "2025-11-29T15:07:42.579Z"
+                  },
+                  {
+                      "id": 4,
+                      "nombres": "Ana Sofía",
+                      "apellidos": "Torres Vega",
+                      "dni": "44332211",
+                      "fechaNacimiento": "1995-01-29",
+                      "telefono": "955443322",
+                      "fechaRegistro": "2025-11-29T15:07:42.571Z",
+                      "puntosAcumulados": 67,
+                      "historialCompras": [],
+                      "historialCanjes": [],
+                      "codigoCorto": "AST004",
+                      "direccion": "Av. Central 321, Lima",
+                      "activo": true,
+                      "fechaCreacion": "2025-11-29T15:07:42.571Z",
+                      "fechaActualizacion": "2025-11-29T15:07:42.571Z"
+                  },
+                  {
+                      "id": 3,
+                      "nombres": "Carlos Alberto",
+                      "apellidos": "Mendoza Silva",
+                      "dni": "11223344",
+                      "fechaNacimiento": "1978-11-07",
+                      "telefono": "998877665",
+                      "fechaRegistro": "2025-11-29T15:07:42.563Z",
+                      "puntosAcumulados": 234,
+                      "historialCompras": [],
+                      "historialCanjes": [],
+                      "codigoCorto": "CAM003",
+                      "direccion": "Calle Los Pinos 789, Lima",
+                      "activo": true,
+                      "fechaCreacion": "2025-11-29T15:07:42.563Z",
+                      "fechaActualizacion": "2025-11-29T15:07:42.563Z"
+                  },
+                  {
+                      "id": 2,
+                      "nombres": "María Elena",
+                      "apellidos": "Rodríguez López",
+                      "dni": "87654321",
+                      "fechaNacimiento": "1990-07-21",
+                      "telefono": "912345678",
+                      "fechaRegistro": "2025-11-29T15:07:42.557Z",
+                      "puntosAcumulados": 89,
+                      "historialCompras": [],
+                      "historialCanjes": [],
+                      "codigoCorto": "MER002",
+                      "direccion": "Jr. Las Flores 456, Lima",
+                      "activo": true,
+                      "fechaCreacion": "2025-11-29T15:07:42.557Z",
+                      "fechaActualizacion": "2025-11-29T15:07:42.557Z"
+                  },
+                  {
+                      "id": 1,
+                      "nombres": "Juan Carlos",
+                      "apellidos": "Pérez García",
+                      "dni": "12345678",
+                      "fechaNacimiento": "1985-03-14",
+                      "telefono": "987654321",
+                      "fechaRegistro": "2025-11-29T15:07:42.549Z",
+                      "puntosAcumulados": 150,
+                      "historialCompras": [],
+                      "historialCanjes": [],
+                      "codigoCorto": "JCP001",
+                      "direccion": "Av. Los Olivos 123, Lima",
+                      "activo": true,
+                      "fechaCreacion": "2025-11-29T15:07:42.549Z",
+                      "fechaActualizacion": "2025-11-29T15:07:42.549Z"
+                  }
+              ],
+              "total": 5,
+              "page": 1,
+              "limit": 10,
+              "totalPages": 1,
+              "hasNextPage": false,
+              "hasPrevPage": false
+          }     
   GET      `/clientes/{id}`   Obtener cliente
   GET: `/clientes/search`  (Buscar clientes por nombre, apellido, DNI, teléfono o código por query)
   GET: `/clientes/cumpleañeros`  (Obtener clientes que cumplen años hoy)
@@ -259,6 +739,98 @@ curl -X POST http://localhost:3000/auth/login   -H "Content-Type: application/js
                   "activo": true
                 }         
 | GET    | `/promociones`                 | Listar promociones   |
+        ### payload example: 
+              {
+                  "data": [
+                      {
+                          "id": 5,
+                          "nombre": "Black Friday",
+                          "descripcion": "25% descuento en todo",
+                          "tipo": "PORCENTAJE",
+                          "descuento": "25.00",
+                          "fechaInicio": "2024-11-28",
+                          "fechaFin": "2024-11-28",
+                          "activo": false,
+                          "productosAplicables": [],
+                          "montoMinimo": null,
+                          "cantidadMaximaUsos": null,
+                          "cantidadUsada": 0,
+                          "fechaCreacion": "2025-11-29T15:07:42.660Z",
+                          "fechaActualizacion": "2025-11-29T15:07:42.660Z"
+                      },
+                      {
+                          "id": 4,
+                          "nombre": "Descuento Cumpleañeros",
+                          "descripcion": "S/10 de descuento en tu cumpleaños",
+                          "tipo": "MONTO",
+                          "descuento": "10.00",
+                          "fechaInicio": "2023-12-31",
+                          "fechaFin": "2024-12-30",
+                          "activo": true,
+                          "productosAplicables": [],
+                          "montoMinimo": null,
+                          "cantidadMaximaUsos": null,
+                          "cantidadUsada": 0,
+                          "fechaCreacion": "2025-11-29T15:07:42.654Z",
+                          "fechaActualizacion": "2025-11-29T15:07:42.654Z"
+                      },
+                      {
+                          "id": 3,
+                          "nombre": "Promo Estudiantes",
+                          "descripcion": "15% descuento con carnet universitario",
+                          "tipo": "PORCENTAJE",
+                          "descuento": "15.00",
+                          "fechaInicio": "2024-02-29",
+                          "fechaFin": "2024-07-30",
+                          "activo": true,
+                          "productosAplicables": [],
+                          "montoMinimo": null,
+                          "cantidadMaximaUsos": null,
+                          "cantidadUsada": 0,
+                          "fechaCreacion": "2025-11-29T15:07:42.646Z",
+                          "fechaActualizacion": "2025-11-29T15:07:42.646Z"
+                      },
+                      {
+                          "id": 2,
+                          "nombre": "Happy Hour",
+                          "descripcion": "S/5 de descuento en licores",
+                          "tipo": "MONTO",
+                          "descuento": "5.00",
+                          "fechaInicio": "2023-12-31",
+                          "fechaFin": "2024-12-30",
+                          "activo": true,
+                          "productosAplicables": [],
+                          "montoMinimo": null,
+                          "cantidadMaximaUsos": null,
+                          "cantidadUsada": 0,
+                          "fechaCreacion": "2025-11-29T15:07:42.604Z",
+                          "fechaActualizacion": "2025-11-29T15:07:42.604Z"
+                      },
+                      {
+                          "id": 1,
+                          "nombre": "Descuento Fin de Semana",
+                          "descripcion": "10% de descuento en todas las cervezas",
+                          "tipo": "PORCENTAJE",
+                          "descuento": "10.00",
+                          "fechaInicio": "2023-12-31",
+                          "fechaFin": "2024-12-30",
+                          "activo": true,
+                          "productosAplicables": [],
+                          "montoMinimo": null,
+                          "cantidadMaximaUsos": null,
+                          "cantidadUsada": 0,
+                          "fechaCreacion": "2025-11-29T15:07:42.592Z",
+                          "fechaActualizacion": "2025-11-29T15:07:42.592Z"
+                      }
+                  ],
+                  "total": 5,
+                  "page": 1,
+                  "limit": 10,
+                  "totalPages": 1,
+                  "hasNextPage": false,
+                  "hasPrevPage": false
+              }
+
 | GET    | `/promociones/activas`            | Obtener promoción activas   |
 | GET    | `/promociones/vencidas`            | Obtener promoción vencidas    |
 | GET    | `/promociones/tipo/{tipo}`            | Obtener promoción por tipo   |
