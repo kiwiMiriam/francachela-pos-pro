@@ -27,8 +27,8 @@ export const API_ENDPOINTS = {
   
   // Productos
   PRODUCTS: {
-    BASE: '/products',
-    BY_ID: (id: number) => `/products/${id}`,
+    BASE: '/productos',
+    BY_ID: (id: number) => `/productos/${id}`,
     SEARCH: '/productos/search',
     CATEGORIES: '/productos/categorias',
     LOW_STOCK: '/productos/stock-bajo',
