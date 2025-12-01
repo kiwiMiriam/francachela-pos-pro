@@ -6,10 +6,6 @@ export const API_CONFIG = {
   MOCK_DELAY: parseInt(import.meta.env.VITE_MOCK_DELAY || '500'),
   JWT_SECRET: import.meta.env.VITE_JWT_SECRET || 'francachela_pos_secret_key',
   JWT_EXPIRES_IN: import.meta.env.VITE_JWT_EXPIRES_IN || '24h',
-  
-  // DEPRECATED - Will be removed
-  USE_GOOGLE_SHEETS: import.meta.env.VITE_USE_GOOGLE_SHEETS === 'true',
-  GOOGLE_SHEETS_SCRIPT_URL: import.meta.env.VITE_GOOGLE_SHEETS_SCRIPT_URL || '',
 };
 
 export const API_ENDPOINTS = {
