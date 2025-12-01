@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import type { PaymentMethod, SaleItem } from '@/types';
-import { salesAPI } from '@/services/api';
 import { toast } from 'sonner';
 
 interface Ticket {
@@ -236,19 +235,24 @@ export function POSProvider({ children }: { children: React.ReactNode }) {
       };
 
       try {
+        // Lazy import de los servicios para evitar problemas de circular dependencies
+        const { salesAPI, clientsAPI } = await import('@/services/api');
+        
         // Enviar venta a Google Sheets
         await salesAPI.create(saleData as any);
         
         // Actualizar puntos del cliente si existe (SUMA, no reemplaza)
         if (ticket.clientId && pointsEarned > 0) {
           try {
-            const { clientsAPI } = await import('@/services/api');
             // Obtener datos frescos del cliente
             const client = await clientsAPI.getById(ticket.clientId);
-            const currentPoints = parseInt(String(client.points || 0));
+            const currentPoints = parseInt(String(client.puntosAcumulados || 0));
             const newPoints = currentPoints + pointsEarned;
             console.log(`Sumando puntos al cliente ${ticket.clientId}: ${currentPoints} + ${pointsEarned} = ${newPoints}`);
-            await clientsAPI.update(ticket.clientId, { points: newPoints });
+            await clientsAPI.update(ticket.clientId, { 
+              ...client,
+              puntosAcumulados: newPoints 
+            });
           } catch (error) {
             console.error('Error al actualizar puntos del cliente:', error);
           }

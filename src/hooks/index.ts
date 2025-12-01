@@ -1,9 +1,13 @@
 /**
- * Hooks consolidados para TanStack Query
+ * Hooks consolidados para TanStack Query y autenticación
  * 
  * Este archivo exporta todos los hooks personalizados para facilitar
  * la importación en los componentes.
  */
+
+// Hooks de autenticación
+export * from './useAuth';
+export * from './useAuthWithRecovery';
 
 // Hooks de productos
 export * from './useProducts';

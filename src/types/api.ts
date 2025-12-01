@@ -12,11 +12,18 @@ export interface ApiError {
 }
 
 // Tipos para autenticación JWT
+/**
+ * Solicitud de login al endpoint /auth/login
+ * El backend espera: username (no email) y password
+ */
 export interface LoginRequest {
-  email: string;
+  username: string;
   password: string;
 }
 
+/**
+ * Respuesta del backend después de autenticarse
+ */
 export interface LoginResponse {
   user: {
     id: number;

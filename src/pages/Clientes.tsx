@@ -20,7 +20,7 @@ export default function Clientes() {
 
   // Usar los nuevos hooks
   const { data: clientes = [], isLoading, error, refetch } = useClients();
-  const { data: searchedClients = [], mutate: searchClients } = useClientSearch(searchTerm);
+  const { data: searchedClientes = [] } = useClientSearch(searchTerm);
   const createClientMutation = useCreateClient();
   const updateClientMutation = useUpdateClient();
   const deleteClientMutation = useDeleteClient();
@@ -34,21 +34,6 @@ export default function Clientes() {
     birthday: '',
     points: 0,
   });
-
-  useEffect(() => {
-    loadClients();
-  }, []);
-
-  const loadClients = async () => {
-    try {
-      const data = await clientsAPI.getAll();
-      setClientes(data);
-    } catch (error) {
-      toast.error('Error al cargar clientes');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,28 +51,33 @@ export default function Clientes() {
       // Combinar nombres y apellidos
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
       const clientData = {
-        name: fullName,
+        nombres: formData.firstName,
+        apellidos: formData.lastName,
         dni: formData.dni,
-        phone: formData.phone,
+        telefono: formData.phone,
         email: formData.email,
-        address: formData.address,
-        birthday: formData.birthday,
-        points: formData.points,
+        direccion: formData.address,
+        fechaNacimiento: formData.birthday,
+        puntosAcumulados: formData.points,
       };
       
       if (editingClient) {
-        await clientsAPI.update(editingClient.id, clientData);
+        await updateClientMutation.mutateAsync({ 
+          id: editingClient.id, 
+          data: clientData 
+        });
         toast.success('Cliente actualizado correctamente');
       } else {
-        await clientsAPI.create(clientData as any);
+        await createClientMutation.mutateAsync(clientData as Omit<Client, 'id'>);
         toast.success('Cliente creado correctamente');
       }
       
       setIsDialogOpen(false);
       resetForm();
-      loadClients();
+      refetch();
     } catch (error) {
-      toast.error('Error al guardar cliente');
+      const errorMessage = error instanceof Error ? error.message : 'Error al guardar cliente';
+      toast.error(errorMessage);
     }
   };
 
@@ -95,11 +85,12 @@ export default function Clientes() {
     if (!confirm('¿Estás seguro de eliminar este cliente?')) return;
     
     try {
-      await clientsAPI.delete(id);
+      await deleteClientMutation.mutateAsync(id);
       toast.success('Cliente eliminado correctamente');
-      loadClients();
+      refetch();
     } catch (error) {
-      toast.error('Error al eliminar cliente');
+      const errorMessage = error instanceof Error ? error.message : 'Error al eliminar cliente';
+      toast.error(errorMessage);
     }
   };
 
@@ -142,13 +133,14 @@ export default function Clientes() {
   };
 
   const filteredClientes = clientes.filter(cliente => {
-    if (!cliente?.name || !cliente?.dni || !cliente?.phone) return false;
+    if (!cliente?.nombres || !cliente?.dni || !cliente?.telefono) return false;
     
     const searchTermLower = searchTerm.toLowerCase();
     return (
-      cliente.name.toLowerCase().includes(searchTermLower) ||
+      cliente.nombres.toLowerCase().includes(searchTermLower) ||
+      cliente.apellidos.toLowerCase().includes(searchTermLower) ||
       cliente.dni.includes(searchTerm) ||
-      cliente.phone.includes(searchTerm)
+      cliente.telefono.includes(searchTerm)
     );
   });
 
@@ -294,12 +286,12 @@ export default function Clientes() {
             <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
               <CardTitle className="flex items-center gap-3 text-lg">
                 <Users className="h-5 w-5 text-primary" />
-                {cliente.name}
+                {cliente.nombres} {cliente.apellidos}
               </CardTitle>
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Badge variant="secondary" className="gap-1">
                   <Star className="h-3 w-3" />
-                  {cliente.points} pts
+                  {cliente.puntosAcumulados} pts
                 </Badge>
                 <Button size="icon" variant="ghost" onClick={() => openEditDialog(cliente)}>
                   <Pencil className="h-4 w-4" />
@@ -317,7 +309,7 @@ export default function Clientes() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Teléfono</p>
-                  <p className="font-semibold">{cliente.phone}</p>
+                  <p className="font-semibold">{cliente.telefono}</p>
                 </div>
                 {cliente.email && (
                   <div>
@@ -325,10 +317,10 @@ export default function Clientes() {
                     <p className="font-semibold text-sm">{cliente.email}</p>
                   </div>
                 )}
-                {cliente.address && (
+                {cliente.direccion && (
                   <div className="sm:col-span-2">
                     <p className="text-sm text-muted-foreground">Dirección</p>
-                    <p className="font-semibold text-sm">{cliente.address}</p>
+                    <p className="font-semibold text-sm">{cliente.direccion}</p>
                   </div>
                 )}
               </div>

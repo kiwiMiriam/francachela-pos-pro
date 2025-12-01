@@ -33,15 +33,25 @@ class FrancachelaHttpClient implements HttpClient {
 
   private getAuthToken(): string | null {
     try {
-      const user = localStorage.getItem('user');
-      if (user) {
-        const userData = JSON.parse(user);
-        return userData.token || null;
-      }
+      // El token se guarda directamente en 'auth_token', NO dentro de user
       return localStorage.getItem('auth_token');
     } catch (error) {
       this.log('Error getting auth token:', error);
       return null;
+    }
+  }
+
+  /**
+   * Maneja errores 401 limpiando sesión y redirigiendo a login
+   */
+  private handleUnauthorized(): void {
+    this.log('Unauthorized response - clearing session');
+    localStorage.removeItem('user');
+    localStorage.removeItem('auth_token');
+    
+    // Redirigir a login si no estamos ya ahí
+    if (!window.location.pathname.includes('/login')) {
+      window.location.href = '/login?reason=session_expired';
     }
   }
 
@@ -106,6 +116,10 @@ class FrancachelaHttpClient implements HttpClient {
       const token = this.getAuthToken();
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+      } else {
+        this.log('No auth token available for protected request');
+        this.handleUnauthorized();
+        throw new Error('No authentication token available');
       }
     }
 
@@ -131,18 +145,15 @@ class FrancachelaHttpClient implements HttpClient {
         
         this.log(`Response status: ${response.status}`);
         
-        // Handle 401 Unauthorized - token might be expired
+        // Handle 401 Unauthorized - sesión expirada o inválida
         if (response.status === 401) {
-          this.log('Unauthorized response, clearing auth token');
-          localStorage.removeItem('user');
-          localStorage.removeItem('auth_token');
-          
-          // Redirect to login if we're not already there
-          if (!window.location.pathname.includes('/login')) {
-            window.location.href = '/login';
-          }
-          
+          this.handleUnauthorized();
           throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+        }
+
+        // Handle 403 Forbidden - usuario sin permisos
+        if (response.status === 403) {
+          throw new Error('No tienes permisos para acceder a este recurso');
         }
 
         return await this.handleResponse<T>(response);
@@ -156,7 +167,8 @@ class FrancachelaHttpClient implements HttpClient {
         if (
           lastError.name === 'AbortError' ||
           lastError.message.includes('Sesión expirada') ||
-          lastError.message.includes('401')
+          lastError.message.includes('401') ||
+          lastError.message.includes('No authentication token')
         ) {
           break;
         }

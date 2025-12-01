@@ -31,8 +31,8 @@ export default function POS() {
   // Usar los nuevos hooks
   const { data: products = [], isLoading: productsLoading, error: productsError } = useProducts();
   const { data: clients = [], isLoading: clientsLoading } = useClients();
-  const { data: searchedProducts = [], mutate: searchProducts } = useProductSearch(searchTerm);
-  const { data: searchedClients = [], mutate: searchClients } = useClientSearch(clientSearchTerm);
+  const { data: searchedProducts = [] } = useProductSearch(searchTerm);
+  const { data: searchedClients = [] } = useClientSearch(clientSearchTerm);
   
   const {
     tickets,
@@ -159,14 +159,12 @@ export default function POS() {
     
     await completeSale(selectedPaymentMethod, 'Sistema');
     
-    // Recargar datos de clientes para obtener los puntos actualizados
-    const updatedClients = await clientsAPI.getAll();
-    setClients(updatedClients);
+    // Obtener el cliente actualizado para obtener los puntos actualizados
+    const client = clients.find(c => c.id === currentClientId);
     
     // Enviar WhatsApp si hay cliente (siempre enviar)
-    const client = updatedClients.find(c => c.id === currentClientId);
-    if (client && client.phone) {
-      sendWhatsAppMessage(client.phone, pointsEarned, total);
+    if (client && client.telefono) {
+      sendWhatsAppMessage(client.telefono, pointsEarned, total);
     }
     
     toast({
@@ -245,12 +243,12 @@ export default function POS() {
                         />
                       </div>
                       <div className="space-y-2 max-h-80 overflow-y-auto">
-                        {filteredClients.length === 0 ? (
+                        {displayClients.length === 0 ? (
                           <p className="text-center text-muted-foreground py-4">
                             No se encontraron clientes
                           </p>
                         ) : (
-                          filteredClients.map((client) => (
+                          displayClients.map((client) => (
                         <Button
                           key={client.id}
                           variant="outline"
@@ -259,9 +257,9 @@ export default function POS() {
                         >
                           <User className="h-4 w-4 mr-2" />
                           <div className="text-left flex-1">
-                            <div className="font-medium">{client.name}</div>
+                            <div className="font-medium">{client.nombres} {client.apellidos}</div>
                             <div className="text-xs text-muted-foreground">
-                              {client.phone} • {client.points} pts
+                              {client.telefono} • {client.puntosAcumulados} pts
                             </div>
                           </div>
                           </Button>
@@ -280,7 +278,7 @@ export default function POS() {
                     <div>
                       <div className="text-sm font-medium">{activeTicket.clientName}</div>
                       <div className="text-xs text-muted-foreground">
-                        {clients.find(c => c.id === activeTicket.clientId)?.points || 0} puntos
+                        {clients.find(c => c.id === activeTicket.clientId)?.puntosAcumulados || 0} puntos
                       </div>
                     </div>
                   </div>
