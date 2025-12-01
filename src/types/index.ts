@@ -32,23 +32,24 @@ export enum ProductSupplier {
 export interface Product {
   id: number;
   name: string;
-  barcode: string;
-  category: string;
-  price: number;
-  cost: number;
-  stock: number;
-  minStock: number;
-  supplier: string;
-  description?: string;
-  image?: string;
-  wholesalePrice?: number;
-  pointsValue?: number;
-  showInCatalog?: boolean;
-  useInventory?: boolean;
+  codigoBarra: string;
+  categoria: string;
+  precio: number;
+  costo: number;
+  cantidadActual: number;
+  cantidadMinima: number;
+  proveedor: string;
+  productoDescripcion?: string;
+  imagen?: string;
+  precioMayoreo?: number;
+  valorPuntos?: number;
+  mostrar?: boolean;
+  usaInventario?: boolean;
   
   // Campos adicionales del backend
   fechaCreacion?: string;
   fechaActualizacion?: string;
+  activo?: boolean;
 }
 
 export interface Client {
@@ -59,8 +60,9 @@ export interface Client {
   dni: string;
   telefono: string;
   direccion?: string;
-  birthday?: string;
-  points: number;
+  fechaNacimiento?: string;
+  puntosAcumulados: number;
+  email?: string;
   
   // Campos adicionales del backend
   fechaRegistro?: string;

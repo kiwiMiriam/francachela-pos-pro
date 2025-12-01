@@ -103,7 +103,7 @@ export default function Clientes() {
     const firstName = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : nameParts[0] || '';
     
     // Limpiar el teléfono del prefijo +51 si existe
-    const cleanPhone = (client.phone || '').replace(/^\+?51/, '');
+    const cleanPhone = (client.telefono || '').replace(/^\+?51/, '');
     
     setFormData({
       firstName: firstName,
@@ -111,9 +111,9 @@ export default function Clientes() {
       dni: client.dni,
       phone: cleanPhone,
       email: client.email || '',
-      address: client.address || '',
-      birthday: client.birthday || '',
-      points: client.points || 0,
+      address: client.direccion || '',
+      birthday: client.fechaNacimiento || '',
+      points: client.puntosAcumulados || 0,
     });
     setIsDialogOpen(true);
   };

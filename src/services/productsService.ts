@@ -37,20 +37,20 @@ export const productsService = {
           const searchTerm = params.search.toLowerCase();
           products = products.filter(product => 
             product.name.toLowerCase().includes(searchTerm) ||
-            product.barcode.includes(searchTerm) ||
-            product.category.toLowerCase().includes(searchTerm) ||
-            product.supplier.toLowerCase().includes(searchTerm)
+            product.codigoBarra.includes(searchTerm) ||
+            product.categoria.toLowerCase().includes(searchTerm) ||
+            product.proveedor.toLowerCase().includes(searchTerm)
           );
         }
         
         // Aplicar filtro de categoría si existe
         if (params?.categoria) {
-          products = products.filter(product => product.category === params.categoria);
+          products = products.filter(product => product.categoria === params.categoria);
         }
         
         // Aplicar filtro de mostrar si existe
         if (params?.mostrar !== undefined) {
-          products = products.filter(product => product.showInCatalog === params.mostrar);
+          products = products.filter(product => product.mostrar === params.mostrar);
         }
         
         return products;
