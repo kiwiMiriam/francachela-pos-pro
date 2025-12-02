@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,24 +6,36 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Users, Star, Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Users, Star, Plus, Pencil, Trash2, Search, AlertCircle, Check } from "lucide-react";
 import { toast } from "sonner";
-import { useClients, useClientSearch, useCreateClient, useUpdateClient, useDeleteClient } from "@/hooks";
+import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from "@/hooks";
+import { clientsService } from '@/services/clientsService';
 import type { Client } from "@/types";
+
+// Validaciones en tiempo real
+interface ValidationErrors {
+  firstName?: string;
+  lastName?: string;
+  dni?: string;
+  phone?: string;
+}
 
 export default function Clientes() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [dniValidating, setDniValidating] = useState(false);
+  const [dniAvailable, setDniAvailable] = useState<boolean | null>(null);
   const ITEMS_PER_PAGE = 10;
 
   // Usar los nuevos hooks
   const { data: clientes = [], isLoading, error, refetch } = useClients();
-  const { data: searchedClientes = [] } = useClientSearch(searchTerm);
   const createClientMutation = useCreateClient();
   const updateClientMutation = useUpdateClient();
   const deleteClientMutation = useDeleteClient();
+  
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -35,26 +47,119 @@ export default function Clientes() {
     points: 0,
   });
 
+  // Validación en tiempo real del DNI
+  const validateDni = useCallback(async (dni: string, excludeId?: number) => {
+    if (!dni || dni.length !== 8) {
+      setDniAvailable(null);
+      return;
+    }
+    
+    setDniValidating(true);
+    try {
+      const isAvailable = await clientsService.validateDni(dni, excludeId);
+      setDniAvailable(isAvailable);
+      if (!isAvailable) {
+        setValidationErrors(prev => ({ ...prev, dni: 'Este DNI ya está registrado' }));
+      } else {
+        setValidationErrors(prev => {
+          const { dni: _, ...rest } = prev;
+          return rest;
+        });
+      }
+    } catch (error) {
+      console.error('Error validating DNI:', error);
+    } finally {
+      setDniValidating(false);
+    }
+  }, []);
+
+  // Debounce para validación de DNI
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (formData.dni.length === 8) {
+        validateDni(formData.dni, editingClient?.id);
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [formData.dni, editingClient?.id, validateDni]);
+
+  // Validaciones en tiempo real
+  const validateField = (field: string, value: string) => {
+    const errors: ValidationErrors = { ...validationErrors };
+    
+    switch (field) {
+      case 'firstName':
+        if (!value.trim()) {
+          errors.firstName = 'El nombre es requerido';
+        } else if (value.length < 2) {
+          errors.firstName = 'El nombre debe tener al menos 2 caracteres';
+        } else {
+          delete errors.firstName;
+        }
+        break;
+      case 'lastName':
+        if (!value.trim()) {
+          errors.lastName = 'El apellido es requerido';
+        } else if (value.length < 2) {
+          errors.lastName = 'El apellido debe tener al menos 2 caracteres';
+        } else {
+          delete errors.lastName;
+        }
+        break;
+      case 'dni':
+        if (!value) {
+          errors.dni = 'El DNI es requerido';
+        } else if (!/^\d{8}$/.test(value)) {
+          errors.dni = 'El DNI debe tener 8 dígitos';
+        } else {
+          delete errors.dni;
+        }
+        break;
+      case 'phone':
+        if (!value) {
+          errors.phone = 'El teléfono es requerido';
+        } else if (!/^\d{9}$/.test(value)) {
+          errors.phone = 'El teléfono debe tener 9 dígitos';
+        } else {
+          delete errors.phone;
+        }
+        break;
+    }
+    
+    setValidationErrors(errors);
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    validateField(field, value);
+  };
+
+  const isFormValid = () => {
+    return (
+      formData.firstName.trim().length >= 2 &&
+      formData.lastName.trim().length >= 2 &&
+      /^\d{8}$/.test(formData.dni) &&
+      /^\d{9}$/.test(formData.phone) &&
+      Object.keys(validationErrors).length === 0 &&
+      (dniAvailable === true || editingClient !== null)
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!isFormValid()) {
+      toast.error('Por favor corrige los errores en el formulario');
+      return;
+    }
+    
     try {
-      // Validar DNI duplicado al crear nuevo cliente
-      if (!editingClient) {
-        const existingClient = clientes.find(c => c.dni === formData.dni);
-        if (existingClient) {
-          toast.error('El DNI ya está registrado');
-          return;
-        }
-      }
-      
-      // Combinar nombres y apellidos
-      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
       const clientData = {
         nombres: formData.firstName,
         apellidos: formData.lastName,
         dni: formData.dni,
-        telefono: formData.phone,
+        telefono: `+51${formData.phone}`,
         email: formData.email,
         direccion: formData.address,
         fechaNacimiento: formData.birthday,
@@ -96,8 +201,9 @@ export default function Clientes() {
 
   const openEditDialog = (client: Client) => {
     setEditingClient(client);
+    setDniAvailable(true); // El DNI actual es válido
+    setValidationErrors({});
     
-    // Usar nombres y apellidos directamente del cliente
     setFormData({
       firstName: client.nombres,
       lastName: client.apellidos,
@@ -113,6 +219,8 @@ export default function Clientes() {
 
   const resetForm = () => {
     setEditingClient(null);
+    setValidationErrors({});
+    setDniAvailable(null);
     setFormData({
       firstName: '',
       lastName: '',
@@ -125,16 +233,16 @@ export default function Clientes() {
     });
   };
 
-  // Asegurar que clientes sea un array antes de filtrar
+  // Filtrar clientes localmente (sin usar el endpoint de búsqueda)
   const filteredClientes = (clientes || []).filter(cliente => {
-    if (!cliente?.nombres || !cliente?.dni || !cliente?.telefono) return false;
+    if (!cliente?.nombres || !cliente?.dni) return false;
     
     const searchTermLower = searchTerm.toLowerCase();
     return (
       cliente.nombres.toLowerCase().includes(searchTermLower) ||
       cliente.apellidos.toLowerCase().includes(searchTermLower) ||
       cliente.dni.includes(searchTerm) ||
-      cliente.telefono.includes(searchTerm)
+      (cliente.telefono || '').includes(searchTerm)
     );
   });
 
@@ -173,31 +281,65 @@ export default function Clientes() {
                 <Input
                   id="firstName"
                   value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  onChange={(e) => handleInputChange('firstName', e.target.value)}
                   placeholder="Juan Carlos"
+                  className={validationErrors.firstName ? 'border-destructive' : ''}
                   required
                 />
+                {validationErrors.firstName && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {validationErrors.firstName}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">Apellidos *</Label>
                 <Input
                   id="lastName"
                   value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  onChange={(e) => handleInputChange('lastName', e.target.value)}
                   placeholder="Pérez García"
+                  className={validationErrors.lastName ? 'border-destructive' : ''}
                   required
                 />
+                {validationErrors.lastName && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {validationErrors.lastName}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="dni">DNI *</Label>
-                <Input
-                  id="dni"
-                  value={formData.dni}
-                  onChange={(e) => setFormData({ ...formData, dni: e.target.value })}
-                  maxLength={8}
-                  placeholder="12345678"
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="dni"
+                    value={formData.dni}
+                    onChange={(e) => handleInputChange('dni', e.target.value.replace(/\D/g, ''))}
+                    maxLength={8}
+                    placeholder="12345678"
+                    className={validationErrors.dni ? 'border-destructive pr-10' : 'pr-10'}
+                    required
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {dniValidating && (
+                      <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    )}
+                    {!dniValidating && dniAvailable === true && formData.dni.length === 8 && (
+                      <Check className="h-4 w-4 text-green-500" />
+                    )}
+                    {!dniValidating && dniAvailable === false && (
+                      <AlertCircle className="h-4 w-4 text-destructive" />
+                    )}
+                  </div>
+                </div>
+                {validationErrors.dni && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {validationErrors.dni}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Teléfono *</Label>
@@ -208,22 +350,20 @@ export default function Clientes() {
                   <Input
                     id="phone"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
+                    onChange={(e) => handleInputChange('phone', e.target.value.replace(/\D/g, ''))}
                     placeholder="987654321"
                     maxLength={9}
+                    className={validationErrors.phone ? 'border-destructive' : ''}
                     required
                   />
                 </div>
+                {validationErrors.phone && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {validationErrors.phone}
+                  </p>
+                )}
               </div>
-              {/* <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div> */}
               <div className="space-y-2">
                 <Label htmlFor="address">Dirección Delivery</Label>
                 <Input
@@ -253,7 +393,11 @@ export default function Clientes() {
                 />
               </div>
               <DialogFooter>
-                <Button type="submit" className="w-full">
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={!isFormValid() || dniValidating}
+                >
                   {editingClient ? 'Actualizar' : 'Crear Cliente'}
                 </Button>
               </DialogFooter>

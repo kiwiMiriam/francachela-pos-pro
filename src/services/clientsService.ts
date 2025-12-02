@@ -53,12 +53,22 @@ export const clientsService = {
    */
   search: async (query: string): Promise<Client[]> => {
     try {
-      // getAll() siempre retorna un array (con fallback)
-      const result = (await this.getAll({ search: query }))!;
-      return (result as Client[]) || [];
+      if (!query || query.length < 2) {
+        return [];
+      }
+      
+      const queryParams = new URLSearchParams({ q: query });
+      const response = await httpClient.get<PaginatedResponse<Client> | Client[]>(
+        `${API_ENDPOINTS.CLIENTS.SEARCH}?${queryParams}`
+      );
+      
+      if (response && typeof response === 'object' && 'data' in response) {
+        return normalizeClients((response as PaginatedResponse<Client>).data);
+      }
+      return normalizeClients(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Error searching clients:', error);
-      throw new Error('Error al buscar clientes');
+      return [];
     }
   },
 
@@ -151,12 +161,11 @@ export const clientsService = {
    */
   validateDni: async (dni: string, excludeId?: number): Promise<boolean> => {
     try {
-      // getByDni() retorna Client | null
-      const existingClient = (await this.getByDni(dni))!;
+      const existingClient = await clientsService.getByDni(dni);
       if (existingClient && existingClient.id !== excludeId) {
-        return false; // DNI ya existe
+        return false;
       }
-      return true; // DNI disponible
+      return true;
     } catch (error) {
       console.error('Error validating DNI:', error);
       return false;

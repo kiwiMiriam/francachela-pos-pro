@@ -64,8 +64,8 @@ export const inventoryService = {
         if (params?.search) {
           const searchTerm = params.search.toLowerCase();
           movements = movements.filter(movement => 
-            movement.PRODUCTO_NOMBRE.toLowerCase().includes(searchTerm) ||
-            movement.DESCRIPCION.toLowerCase().includes(searchTerm) ||
+            (movement.PRODUCTO_NOMBRE || '').toLowerCase().includes(searchTerm) ||
+            (movement.DESCRIPCION || '').toLowerCase().includes(searchTerm) ||
             movement.CAJERO.toLowerCase().includes(searchTerm)
           );
         }
@@ -77,7 +77,6 @@ export const inventoryService = {
       
       // Usar backend real
       const queryParams = new URLSearchParams();
-      if (params?.search) queryParams.append('search', params.search);
       if (params?.page) queryParams.append('page', params.page.toString());
       if (params?.limit) queryParams.append('limit', params.limit.toString());
       
@@ -131,7 +130,7 @@ export const inventoryService = {
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
         
-        const allMovements = (await this.getMovements())!;
+        const allMovements = await inventoryService.getMovements();
         return allMovements.filter(movement => 
           movement.HORA.startsWith(todayStr)
         );
@@ -155,7 +154,7 @@ export const inventoryService = {
         const fromDate = new Date(filters.startDate || '');
         const toDate = new Date(filters.endDate || '');
         
-        const allMovements = (await this.getMovements())!;
+        const allMovements = await inventoryService.getMovements();
         return allMovements.filter(movement => {
           const movementDate = new Date(movement.HORA);
           return movementDate >= fromDate && movementDate <= toDate;
@@ -181,7 +180,7 @@ export const inventoryService = {
       if (API_CONFIG.USE_MOCKS) {
         await simulateDelay();
         
-        const allMovements = (await this.getMovements())!;
+        const allMovements = await inventoryService.getMovements();
         return allMovements.filter(movement => 
           movement.TIPO.toLowerCase() === tipo.toLowerCase()
         );
@@ -202,7 +201,7 @@ export const inventoryService = {
       if (API_CONFIG.USE_MOCKS) {
         await simulateDelay();
         
-        const allMovements = (await this.getMovements())!;
+        const allMovements = await inventoryService.getMovements();
         return allMovements.filter(movement => 
           movement.CAJERO.toLowerCase().includes(cajero.toLowerCase())
         );
@@ -343,7 +342,7 @@ export const inventoryService = {
       if (API_CONFIG.USE_MOCKS) {
         await simulateDelay();
         
-        const allMovements = (await this.getMovements())!;
+        const allMovements = await inventoryService.getMovements();
         let movements = Array.isArray(allMovements) ? allMovements : [];
         
         if (filters) {

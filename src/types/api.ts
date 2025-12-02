@@ -90,6 +90,9 @@ export interface DateRangeFilterParams extends FilterParams {
   endDate?: string;
 }
 
+// Alias para compatibilidad
+export type DateRangeFilter = DateRangeFilterParams;
+
 // Tipos para respuestas genéricas
 export type GenericStatistics = Record<string, unknown>;
 
@@ -183,6 +186,7 @@ export interface ComboCreateRequest {
 export interface CashRegisterOpenRequest {
   montoInicial: number;
   observaciones?: string;
+  cajero?: string;
 }
 
 export interface CashRegisterCloseRequest {
@@ -191,14 +195,18 @@ export interface CashRegisterCloseRequest {
 }
 
 // Tipos para gastos según el backend
+export type ExpenseCategory = 'OPERATIVO' | 'ADMINISTRATIVO' | 'MARKETING' | 'MANTENIMIENTO' | 'OTROS';
+
 export interface ExpenseCreateRequest {
   descripcion: string;
   monto: number;
-  categoria: 'OPERATIVO' | 'ADMINISTRATIVO' | 'MARKETING' | 'MANTENIMIENTO' | 'OTROS';
+  categoria: ExpenseCategory;
   metodoPago: 'EFECTIVO' | 'YAPE' | 'PLIN' | 'TARJETA';
   proveedor?: string;
   numeroComprobante?: string;
   comprobante?: string;
+  cajero?: string;
+  observaciones?: string;
 }
 
 // Tipos para delivery según el backend
@@ -268,21 +276,4 @@ export interface CashRegisterStatistics {
   cajasCerradas?: number;
   promedioVentasPorCaja?: number;
   cajeroMasActivo?: string;
-}
-
-// Tipos adicionales para servicios secundarios
-
-// Tipos para Promociones
-export interface PromotionCreateRequest {
-  nombre: string;
-  descripcion: string;
-  tipo: 'PORCENTAJE' | 'MONTO_FIJO';
-  descuento: number;
-  fechaInicio: string;
-  fechaFin: string;
-  productosId?: number[];
-  clientesId?: number[];
-  montoMinimo?: number;
-  cantidadMaxima?: number;
-  active?: boolean;
 }

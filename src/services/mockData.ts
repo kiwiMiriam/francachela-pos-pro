@@ -18,60 +18,58 @@ export const mockUsers: User[] = [
 ];
 
 export const mockProducts: Product[] = [
-  { id: 1, name: 'Inca Kola 500ml', barcode: '7750885005609', category: 'Bebidas', price: 3.50, cost: 2.00, stock: 150, minStock: 20, supplier: 'Lindley', description: 'Bebida gaseosa sabor Inca Kola', image: '', wholesalePrice: 3.00, pointsValue: 3, showInCatalog: true, useInventory: true },
-  { id: 2, name: 'Coca Cola 500ml', barcode: '7750885005616', category: 'Bebidas', price: 3.50, cost: 2.00, stock: 200, minStock: 20, supplier: 'Lindley', description: 'Bebida gaseosa sabor cola', image: '', wholesalePrice: 3.00, pointsValue: 3, showInCatalog: true, useInventory: true },
-  { id: 3, name: 'Chips Lays 180g', barcode: '7750670000536', category: 'Snacks', price: 5.00, cost: 3.50, stock: 80, minStock: 15, supplier: 'PepsiCo', description: 'Papas fritas clásicas', image: '', wholesalePrice: 4.50, pointsValue: 5, showInCatalog: true, useInventory: true },
-  { id: 4, name: 'Galletas Oreo', barcode: '7622210100672', category: 'Snacks', price: 4.50, cost: 3.00, stock: 60, minStock: 10, supplier: 'Mondelez', description: 'Galletas de chocolate con crema', image: '', wholesalePrice: 4.00, pointsValue: 4, showInCatalog: true, useInventory: true },
-  { id: 5, name: 'Cerveza Pilsen 330ml', barcode: '7750182003476', category: 'Bebidas', price: 4.00, cost: 2.50, stock: 120, minStock: 30, supplier: 'Backus', description: 'Cerveza rubia', image: '', wholesalePrice: 3.50, pointsValue: 4, showInCatalog: true, useInventory: true },
-  { id: 6, name: 'Pan Molde Bimbo', barcode: '7501000112345', category: 'Panadería', price: 6.50, cost: 4.00, stock: 40, minStock: 10, supplier: 'Bimbo', description: 'Pan de molde integral', image: '', wholesalePrice: 6.00, pointsValue: 6, showInCatalog: true, useInventory: true },
-  { id: 7, name: 'Leche Gloria 1L', barcode: '7750670003057', category: 'Lácteos', price: 4.80, cost: 3.20, stock: 5, minStock: 15, supplier: 'Gloria', description: 'Leche evaporada entera', image: '', wholesalePrice: 4.50, pointsValue: 4, showInCatalog: true, useInventory: true },
-  { id: 8, name: 'Yogurt Gloria 1L', barcode: '7750670004123', category: 'Lácteos', price: 6.00, cost: 4.00, stock: 0, minStock: 10, supplier: 'Gloria', description: 'Yogurt natural', image: '', wholesalePrice: 5.50, pointsValue: 6, showInCatalog: true, useInventory: true },
+  { id: 1, productoDescripcion: 'Inca Kola 500ml', codigoBarra: '7750885005609', categoria: 'Bebidas', precio: 3.50, costo: 2.00, cantidadActual: 150, cantidadMinima: 20, proveedor: 'Lindley', imagen: '', precioMayoreo: 3.00, valorPuntos: 3, mostrar: true, usaInventario: true },
+  { id: 2, productoDescripcion: 'Coca Cola 500ml', codigoBarra: '7750885005616', categoria: 'Bebidas', precio: 3.50, costo: 2.00, cantidadActual: 200, cantidadMinima: 20, proveedor: 'Lindley', imagen: '', precioMayoreo: 3.00, valorPuntos: 3, mostrar: true, usaInventario: true },
+  { id: 3, productoDescripcion: 'Chips Lays 180g', codigoBarra: '7750670000536', categoria: 'Snacks', precio: 5.00, costo: 3.50, cantidadActual: 80, cantidadMinima: 15, proveedor: 'PepsiCo', imagen: '', precioMayoreo: 4.50, valorPuntos: 5, mostrar: true, usaInventario: true },
+  { id: 4, productoDescripcion: 'Galletas Oreo', codigoBarra: '7622210100672', categoria: 'Snacks', precio: 4.50, costo: 3.00, cantidadActual: 60, cantidadMinima: 10, proveedor: 'Mondelez', imagen: '', precioMayoreo: 4.00, valorPuntos: 4, mostrar: true, usaInventario: true },
+  { id: 5, productoDescripcion: 'Cerveza Pilsen 330ml', codigoBarra: '7750182003476', categoria: 'Bebidas', precio: 4.00, costo: 2.50, cantidadActual: 120, cantidadMinima: 30, proveedor: 'Backus', imagen: '', precioMayoreo: 3.50, valorPuntos: 4, mostrar: true, usaInventario: true },
+  { id: 6, productoDescripcion: 'Pan Molde Bimbo', codigoBarra: '7501000112345', categoria: 'Panadería', precio: 6.50, costo: 4.00, cantidadActual: 40, cantidadMinima: 10, proveedor: 'Bimbo', imagen: '', precioMayoreo: 6.00, valorPuntos: 6, mostrar: true, usaInventario: true },
+  { id: 7, productoDescripcion: 'Leche Gloria 1L', codigoBarra: '7750670003057', categoria: 'Lácteos', precio: 4.80, costo: 3.20, cantidadActual: 5, cantidadMinima: 15, proveedor: 'Gloria', imagen: '', precioMayoreo: 4.50, valorPuntos: 4, mostrar: true, usaInventario: true },
+  { id: 8, productoDescripcion: 'Yogurt Gloria 1L', codigoBarra: '7750670004123', categoria: 'Lácteos', precio: 6.00, costo: 4.00, cantidadActual: 0, cantidadMinima: 10, proveedor: 'Gloria', imagen: '', precioMayoreo: 5.50, valorPuntos: 6, mostrar: true, usaInventario: true },
 ];
 
 export const mockClients: Client[] = [
-  { id: 1, name: 'Juan Pérez', dni: '12345678', phone: '+51987654321', email: 'juan@email.com', points: 450, birthday: '1990-05-15', address: 'Av. Principal 123' },
-  { id: 2, name: 'María García', dni: '87654321', phone: '+51987654322', email: 'maria@email.com', points: 320, birthday: '1985-12-20', address: 'Jr. Comercio 456' },
-  { id: 3, name: 'Carlos López', dni: '11223344', phone: '+51987654323', points: 180, birthday: '2025-10-05', address: 'Calle Lima 789' },
-  { id: 4, name: 'Ana Torres', dni: '44332211', phone: '+51987654324', points: 520, birthday: '1992-08-30', address: 'Av. Los Olivos 321' },
+  { id: 1, nombres: 'Juan', apellidos: 'Pérez', dni: '12345678', telefono: '+51987654321', email: 'juan@email.com', puntosAcumulados: 450, fechaNacimiento: '1990-05-15', direccion: 'Av. Principal 123' },
+  { id: 2, nombres: 'María', apellidos: 'García', dni: '87654321', telefono: '+51987654322', email: 'maria@email.com', puntosAcumulados: 320, fechaNacimiento: '1985-12-20', direccion: 'Jr. Comercio 456' },
+  { id: 3, nombres: 'Carlos', apellidos: 'López', dni: '11223344', telefono: '+51987654323', puntosAcumulados: 180, fechaNacimiento: '2025-10-05', direccion: 'Calle Lima 789' },
+  { id: 4, nombres: 'Ana', apellidos: 'Torres', dni: '44332211', telefono: '+51987654324', puntosAcumulados: 520, fechaNacimiento: '1992-08-30', direccion: 'Av. Los Olivos 321' },
 ];
 
 export const mockSales: Sale[] = [
   {
     id: 1,
-    ticketNumber: 'T-001',
-    date: '2025-10-02T10:30:00',
-    clientId: 1,
-    clientName: 'Juan Pérez',
-    items: [
-      { productId: 1, productName: 'Inca Kola 500ml', quantity: 2, price: 3.50, subtotal: 7.00, pointsValue: 3 },
-      { productId: 3, productName: 'Chips Lays 180g', quantity: 1, price: 5.00, subtotal: 5.00, pointsValue: 5 },
+    ticketId: 'T-001',
+    fecha: '2025-10-02T10:30:00',
+    clienteId: 1,
+    listaProductos: [
+      { id: 1, descripcion: 'Inca Kola 500ml', cantidad: 2, precio: 3.50, subtotal: 7.00 },
+      { id: 2, descripcion: 'Chips Lays 180g', cantidad: 1, precio: 5.00, subtotal: 5.00 },
     ],
-    subtotal: 12.00,
-    discount: 0,
+    subTotal: 12.00,
+    descuento: 0,
     total: 12.00,
-    paymentMethod: 'Efectivo',
-    cashier: 'Admin',
-    pointsEarned: 12,
-    pointsUsed: 0,
-    status: 'completada',
+    metodoPago: 'EFECTIVO',
+    cajero: 'Admin',
+    puntosOtorgados: 12,
+    puntosUsados: 0,
+    estado: 'COMPLETADA',
   },
   {
     id: 2,
-    ticketNumber: 'T-002',
-    date: '2025-10-02T11:15:00',
-    clientId: 2,
-    clientName: 'María García',
-    items: [
-      { productId: 5, productName: 'Cerveza Pilsen 330ml', quantity: 6, price: 4.00, subtotal: 24.00, pointsValue: 4 },
+    ticketId: 'T-002',
+    fecha: '2025-10-02T11:15:00',
+    clienteId: 2,
+    listaProductos: [
+      { id: 3, descripcion: 'Cerveza Pilsen 330ml', cantidad: 6, precio: 4.00, subtotal: 24.00 },
     ],
-    subtotal: 24.00,
-    discount: 2.00,
+    subTotal: 24.00,
+    descuento: 2.00,
     total: 22.00,
-    paymentMethod: 'Yape',
-    cashier: 'Admin',
-    pointsEarned: 22,
-    pointsUsed: 0,
-    status: 'completada',
+    metodoPago: 'YAPE',
+    cajero: 'Admin',
+    puntosOtorgados: 22,
+    puntosUsados: 0,
+    estado: 'COMPLETADA',
   },
 ];
 
@@ -145,9 +143,9 @@ export const mockCashRegisters: CashRegister[] = [
 ];
 
 export const mockExpenses: Expense[] = [
-  { id: 1, date: '2025-10-02T09:00:00', category: 'Servicios', description: 'Pago de luz', amount: 150.00, paymentMethod: 'Efectivo' },
-  { id: 2, date: '2025-10-02T10:30:00', category: 'Suministros', description: 'Compra de bolsas', amount: 30.00, paymentMethod: 'Efectivo' },
-  { id: 3, date: '2025-10-01T14:00:00', category: 'Mantenimiento', description: 'Reparación de refrigerador', amount: 200.00, paymentMethod: 'Yape' },
+  { id: 1, date: '2025-10-02T09:00:00', category: 'Servicios', description: 'Pago de luz', amount: 150.00, paymentMethod: 'EFECTIVO' },
+  { id: 2, date: '2025-10-02T10:30:00', category: 'Suministros', description: 'Compra de bolsas', amount: 30.00, paymentMethod: 'EFECTIVO' },
+  { id: 3, date: '2025-10-01T14:00:00', category: 'Mantenimiento', description: 'Reparación de refrigerador', amount: 200.00, paymentMethod: 'YAPE' },
 ];
 
 export const mockDeliveryOrders: DeliveryOrder[] = [
