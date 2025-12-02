@@ -10,12 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Package, Plus, Pencil, Trash2, Search, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from '@/hooks/useProducts';
+import { inventoryService } from '@/services/inventoryService';
+import { productsService } from '@/services/productsService';
 import type { Product, InventoryMovement } from "@/types";
 import { ProductCategory, ProductSupplier } from "@/types";
 
 export default function Productos() {
   // Usar hooks de TanStack Query
-  const { data: productos = [], isLoading, error } = useProducts();
+  const { data: productos = [], isLoading, error, refetch } = useProducts();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
@@ -25,27 +27,46 @@ export default function Productos() {
   const [isMovementDialogOpen, setIsMovementDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [movimientos, setMovimientos] = useState<InventoryMovement[]>([]);
+  const [isLoadingMovements, setIsLoadingMovements] = useState(false);
+  
   const [formData, setFormData] = useState({
-    name: '',
-    barcode: '',
-    category: '',
-    price: 0,
-    cost: 0,
-    stock: 0,
-    minStock: 0,
-    supplier: '',
-    description: '',
-    image: '',
-    wholesalePrice: 0,
-    pointsValue: 0,
-    showInCatalog: true,
-    useInventory: true,
+    productoDescripcion: '',
+    codigoBarra: '',
+    categoria: '',
+    precio: 0,
+    costo: 0,
+    cantidadActual: 0,
+    cantidadMinima: 0,
+    proveedor: '',
+    imagen: '',
+    precioMayoreo: 0,
+    valorPuntos: 0,
+    mostrar: true,
+    usaInventario: true,
   });
+  
   const [movementData, setMovementData] = useState({
     type: 'entrada' as 'entrada' | 'salida' | 'ajuste',
     quantity: 0,
     notes: '',
   });
+
+  // Cargar movimientos de inventario
+  useEffect(() => {
+    const loadMovements = async () => {
+      setIsLoadingMovements(true);
+      try {
+        const data = await inventoryService.getMovements();
+        setMovimientos(data);
+      } catch (error) {
+        console.error('Error loading movements:', error);
+      } finally {
+        setIsLoadingMovements(false);
+      }
+    };
+    loadMovements();
+  }, []);
 
   // Manejar errores
   useEffect(() => {
@@ -55,8 +76,6 @@ export default function Productos() {
     }
   }, [error]);
 
-
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -65,7 +84,7 @@ export default function Productos() {
         await updateProduct.mutateAsync({ id: editingProduct.id, data: formData });
         toast.success('Producto actualizado correctamente');
       } else {
-        await createProduct.mutateAsync(formData);
+        await createProduct.mutateAsync(formData as Omit<Product, 'id'>);
         toast.success('Producto creado correctamente');
       }
       
@@ -82,30 +101,31 @@ export default function Productos() {
     if (!selectedProduct) return;
     
     try {
-      await inventoryAPI.createMovement({
-        CODIGO_BARRA: selectedProduct.barcode,
-        DESCRIPCION: selectedProduct.name,
-        COSTO: selectedProduct.cost,
-        PRECIO_VENTA: selectedProduct.price,
-        EXISTENCIA: selectedProduct.stock,
-        INV_MINIMO: selectedProduct.minStock,
+      await inventoryService.createMovement({
         TIPO: movementData.type,
+        PRODUCTO_ID: selectedProduct.id,
+        PRODUCTO_NOMBRE: selectedProduct.productoDescripcion,
         CANTIDAD: movementData.quantity,
+        HORA: new Date().toISOString(),
+        DESCRIPCION: movementData.notes || `Movimiento de ${movementData.type}`,
         CAJERO: 'Usuario', // TODO: obtener del contexto de auth
-        PROVEEDOR: selectedProduct.supplier,
-      } as any);
+      });
       
       // Actualizar stock del producto
       const newStock = movementData.type === 'entrada' 
-        ? selectedProduct.stock + movementData.quantity
-        : selectedProduct.stock - movementData.quantity;
+        ? selectedProduct.cantidadActual + movementData.quantity
+        : selectedProduct.cantidadActual - movementData.quantity;
       
-      await productsAPI.update(selectedProduct.id, { stock: newStock });
+      await productsService.update(selectedProduct.id, { cantidadActual: newStock });
       
       toast.success('Movimiento registrado correctamente');
       setIsMovementDialogOpen(false);
       resetMovementForm();
-      loadData();
+      
+      // Recargar datos
+      refetch();
+      const updatedMovements = await inventoryService.getMovements();
+      setMovimientos(updatedMovements);
     } catch (error) {
       toast.error('Error al registrar movimiento');
     }
@@ -125,20 +145,19 @@ export default function Productos() {
   const openEditDialog = (product: Product) => {
     setEditingProduct(product);
     setFormData({
-      name: product.name,
-      barcode: product.barcode,
-      category: product.category,
-      price: product.price,
-      cost: product.cost,
-      stock: product.stock,
-      minStock: product.minStock,
-      supplier: product.supplier,
-      description: product.description || '',
-      image: product.image || '',
-      wholesalePrice: product.wholesalePrice || 0,
-      pointsValue: product.pointsValue || 0,
-      showInCatalog: product.showInCatalog ?? true,
-      useInventory: product.useInventory ?? true,
+      productoDescripcion: product.productoDescripcion,
+      codigoBarra: product.codigoBarra,
+      categoria: product.categoria,
+      precio: product.precio,
+      costo: product.costo,
+      cantidadActual: product.cantidadActual,
+      cantidadMinima: product.cantidadMinima,
+      proveedor: product.proveedor,
+      imagen: product.imagen || '',
+      precioMayoreo: product.precioMayoreo || 0,
+      valorPuntos: product.valorPuntos || 0,
+      mostrar: product.mostrar ?? true,
+      usaInventario: product.usaInventario ?? true,
     });
     setIsDialogOpen(true);
   };
@@ -151,20 +170,19 @@ export default function Productos() {
   const resetForm = () => {
     setEditingProduct(null);
     setFormData({
-      name: '',
-      barcode: '',
-      category: '',
-      price: 0,
-      cost: 0,
-      stock: 0,
-      minStock: 0,
-      supplier: '',
-      description: '',
-      image: '',
-      wholesalePrice: 0,
-      pointsValue: 0,
-      showInCatalog: true,
-      useInventory: true,
+      productoDescripcion: '',
+      codigoBarra: '',
+      categoria: '',
+      precio: 0,
+      costo: 0,
+      cantidadActual: 0,
+      cantidadMinima: 0,
+      proveedor: '',
+      imagen: '',
+      precioMayoreo: 0,
+      valorPuntos: 0,
+      mostrar: true,
+      usaInventario: true,
     });
   };
 
@@ -177,15 +195,15 @@ export default function Productos() {
     });
   };
 
-  // Asegurar que productos sea un array antes de filtrar
+  // Filtrar productos localmente
   const filteredProductos = (productos || []).filter(producto => {
-    if (!producto?.name || !producto?.barcode || !producto?.category) return false;
+    if (!producto?.productoDescripcion || !producto?.codigoBarra || !producto?.categoria) return false;
     
     const searchTermLower = searchTerm.toLowerCase();
     return (
-      producto.name.toLowerCase().includes(searchTermLower) ||
-      // producto.barcode.includes(searchTerm) ||
-      producto.category.toLowerCase().includes(searchTermLower)
+      producto.productoDescripcion.toLowerCase().includes(searchTermLower) ||
+      producto.codigoBarra.includes(searchTerm) ||
+      producto.categoria.toLowerCase().includes(searchTermLower)
     );
   });
 
@@ -230,8 +248,8 @@ export default function Productos() {
                     <Label htmlFor="name">Nombre *</Label>
                     <Input
                       id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      value={formData.productoDescripcion}
+                      onChange={(e) => setFormData({ ...formData, productoDescripcion: e.target.value })}
                       required
                     />
                   </div>
@@ -239,16 +257,16 @@ export default function Productos() {
                     <Label htmlFor="barcode">Código de Barras *</Label>
                     <Input
                       id="barcode"
-                      value={formData.barcode}
-                      onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                      value={formData.codigoBarra}
+                      onChange={(e) => setFormData({ ...formData, codigoBarra: e.target.value })}
                       required
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="category">Categoría *</Label>
                     <Select
-                      value={formData.category}
-                      onValueChange={(value) => setFormData({ ...formData, category: value })}
+                      value={formData.categoria}
+                      onValueChange={(value) => setFormData({ ...formData, categoria: value })}
                       required
                     >
                       <SelectTrigger id="category">
@@ -270,8 +288,8 @@ export default function Productos() {
                         id="cost"
                         type="number"
                         step="0.01"
-                        value={formData.cost}
-                        onChange={(e) => setFormData({ ...formData, cost: parseFloat(e.target.value) })}
+                        value={formData.costo || ''}
+                        onChange={(e) => setFormData({ ...formData, costo: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
                         required
                       />
                     </div>
@@ -281,8 +299,8 @@ export default function Productos() {
                         id="price"
                         type="number"
                         step="0.01"
-                        value={formData.price}
-                        onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                        value={formData.precio || ''}
+                        onChange={(e) => setFormData({ ...formData, precio: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
                         required
                       />
                     </div>
@@ -293,8 +311,8 @@ export default function Productos() {
                       <Input
                         id="stock"
                         type="number"
-                        value={formData.stock}
-                        onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
+                        value={formData.cantidadActual || ''}
+                        onChange={(e) => setFormData({ ...formData, cantidadActual: e.target.value === '' ? 0 : parseInt(e.target.value) })}
                         required
                       />
                     </div>
@@ -303,8 +321,8 @@ export default function Productos() {
                       <Input
                         id="minStock"
                         type="number"
-                        value={formData.minStock}
-                        onChange={(e) => setFormData({ ...formData, minStock: parseInt(e.target.value) })}
+                        value={formData.cantidadMinima || ''}
+                        onChange={(e) => setFormData({ ...formData, cantidadMinima: e.target.value === '' ? 0 : parseInt(e.target.value) })}
                         required
                       />
                     </div>
@@ -312,8 +330,8 @@ export default function Productos() {
                   <div className="space-y-2">
                     <Label htmlFor="supplier">Proveedor *</Label>
                     <Select
-                      value={formData.supplier}
-                      onValueChange={(value) => setFormData({ ...formData, supplier: value })}
+                      value={formData.proveedor}
+                      onValueChange={(value) => setFormData({ ...formData, proveedor: value })}
                       required
                     >
                       <SelectTrigger id="supplier">
@@ -329,20 +347,11 @@ export default function Productos() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="description">Descripción</Label>
-                    <Input
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Descripción del producto"
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label htmlFor="image">URL de Imagen</Label>
                     <Input
                       id="image"
-                      value={formData.image}
-                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                      value={formData.imagen}
+                      onChange={(e) => setFormData({ ...formData, imagen: e.target.value })}
                       placeholder="https://ejemplo.com/imagen.jpg"
                     />
                   </div>
@@ -353,8 +362,8 @@ export default function Productos() {
                       type="number"
                       step="0.01"
                       min="0"
-                      value={formData.wholesalePrice || ''}
-                      onChange={(e) => setFormData({ ...formData, wholesalePrice: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
+                      value={formData.precioMayoreo || ''}
+                      onChange={(e) => setFormData({ ...formData, precioMayoreo: e.target.value === '' ? 0 : parseFloat(e.target.value) })}
                       placeholder="0.00"
                     />
                   </div>
@@ -364,8 +373,8 @@ export default function Productos() {
                       id="pointsValue"
                       type="number"
                       min="0"
-                      value={formData.pointsValue || ''}
-                      onChange={(e) => setFormData({ ...formData, pointsValue: e.target.value === '' ? 0 : parseInt(e.target.value) })}
+                      value={formData.valorPuntos || ''}
+                      onChange={(e) => setFormData({ ...formData, valorPuntos: e.target.value === '' ? 0 : parseInt(e.target.value) })}
                       placeholder="0"
                     />
                   </div>
@@ -374,8 +383,8 @@ export default function Productos() {
                     <Input
                       id="showInCatalog"
                       type="checkbox"
-                      checked={formData.showInCatalog}
-                      onChange={(e) => setFormData({ ...formData, showInCatalog: e.target.checked })}
+                      checked={formData.mostrar}
+                      onChange={(e) => setFormData({ ...formData, mostrar: e.target.checked })}
                       className="w-4 h-4"
                     />
                   </div>
@@ -384,8 +393,8 @@ export default function Productos() {
                     <Input
                       id="useInventory"
                       type="checkbox"
-                      checked={formData.useInventory}
-                      onChange={(e) => setFormData({ ...formData, useInventory: e.target.checked })}
+                      checked={formData.usaInventario}
+                      onChange={(e) => setFormData({ ...formData, usaInventario: e.target.checked })}
                       className="w-4 h-4"
                     />
                   </div>
@@ -467,38 +476,42 @@ export default function Productos() {
             <p className="text-muted-foreground">Historial de entradas, salidas y ajustes</p>
           </div>
 
-          <div className="grid gap-4">
-            {movimientos.slice(0, 50).map((mov) => (
-              <Card key={mov.id}>
-                <CardContent className="pt-6">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Fecha/Hora</p>
-                      <p className="font-semibold text-sm">{new Date(mov.HORA).toLocaleString()}</p>
+          {isLoadingMovements ? (
+            <div className="flex items-center justify-center h-32">Cargando movimientos...</div>
+          ) : (
+            <div className="grid gap-4">
+              {movimientos.slice(0, 50).map((mov) => (
+                <Card key={mov.id}>
+                  <CardContent className="pt-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Fecha/Hora</p>
+                        <p className="font-semibold text-sm">{new Date(mov.HORA).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Producto</p>
+                        <p className="font-semibold text-sm">{mov.PRODUCTO_NOMBRE || mov.DESCRIPCION}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Tipo</p>
+                        <Badge variant={mov.TIPO === 'entrada' ? 'default' : mov.TIPO === 'salida' ? 'destructive' : 'secondary'}>
+                          {mov.TIPO.toUpperCase()}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Cantidad</p>
+                        <p className="font-semibold">{mov.CANTIDAD}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Cajero</p>
+                        <p className="font-semibold">{mov.CAJERO}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Producto</p>
-                      <p className="font-semibold text-sm">{mov.DESCRIPCION}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Tipo</p>
-                      <Badge variant={mov.TIPO === 'entrada' ? 'default' : mov.TIPO === 'salida' ? 'destructive' : 'secondary'}>
-                        {mov.TIPO.toUpperCase()}
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Cantidad</p>
-                      <p className="font-semibold">{mov.CANTIDAD}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Cajero</p>
-                      <p className="font-semibold">{mov.CAJERO}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
@@ -510,13 +523,13 @@ export default function Productos() {
           <DialogHeader>
             <DialogTitle>Registrar Movimiento</DialogTitle>
             <DialogDescription>
-              {selectedProduct?.name}
+              {selectedProduct?.productoDescripcion}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleMovementSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label>Tipo de Movimiento</Label>
-              <Select value={movementData.type} onValueChange={(value: any) => setMovementData({ ...movementData, type: value })}>
+              <Select value={movementData.type} onValueChange={(value: 'entrada' | 'salida' | 'ajuste') => setMovementData({ ...movementData, type: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -532,10 +545,19 @@ export default function Productos() {
               <Input
                 id="quantity"
                 type="number"
-                value={movementData.quantity}
-                onChange={(e) => setMovementData({ ...movementData, quantity: parseInt(e.target.value) })}
+                value={movementData.quantity || ''}
+                onChange={(e) => setMovementData({ ...movementData, quantity: e.target.value === '' ? 0 : parseInt(e.target.value) })}
                 required
                 min="1"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notas</Label>
+              <Input
+                id="notes"
+                value={movementData.notes}
+                onChange={(e) => setMovementData({ ...movementData, notes: e.target.value })}
+                placeholder="Descripción del movimiento"
               />
             </div>
             <DialogFooter>

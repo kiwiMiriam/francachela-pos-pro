@@ -16,9 +16,8 @@ export const productsService = {
         return [];
       }
       
-      // Usar backend real
+      // Usar backend real - NO usar 'search', usar el endpoint correcto
       const queryParams = new URLSearchParams();
-      if (params?.search) queryParams.append('search', params.search);
       if (params?.page) queryParams.append('page', params.page.toString());
       if (params?.limit) queryParams.append('limit', params.limit.toString());
       if (params?.categoria) queryParams.append('categoria', params.categoria);
@@ -52,12 +51,19 @@ export const productsService = {
   },
 
   /**
-   * Buscar productos
+   * Buscar productos - usa el endpoint dedicado de búsqueda
    */
   search: async (query: string): Promise<Product[]> => {
     try {
+      if (!query || query.length < 2) {
+        return [];
+      }
+      
+      // Usar endpoint de búsqueda específico con parámetro 'q'
       const queryParams = new URLSearchParams({ q: query });
-      const response = await httpClient.get<PaginatedResponse<Product> | Product[]>(`${API_ENDPOINTS.PRODUCTS.SEARCH}?${queryParams}`);
+      const response = await httpClient.get<PaginatedResponse<Product> | Product[]>(
+        `${API_ENDPOINTS.PRODUCTS.SEARCH}?${queryParams}`
+      );
       
       if (response && typeof response === 'object' && 'data' in response) {
         return normalizeProducts((response as PaginatedResponse<Product>).data);
@@ -65,7 +71,8 @@ export const productsService = {
       return normalizeProducts(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Error searching products:', error);
-      throw new Error('Error al buscar productos');
+      // En caso de error, retornar array vacío para no romper la UI
+      return [];
     }
   },
 
@@ -150,9 +157,7 @@ export const productsService = {
    */
   getSuppliers: async (): Promise<string[]> => {
     try {
-      // getAll() siempre retorna un array (con fallback en getAll)
-      const result = (await this.getAll())!;
-      const products = result as Product[];
+      const products = await productsService.getAll();
       if (!products || products.length === 0) return [];
       const suppliers = [...new Set(products.map((p: Product) => p.proveedor).filter(Boolean))];
       return suppliers.sort();
