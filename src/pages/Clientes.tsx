@@ -97,19 +97,12 @@ export default function Clientes() {
   const openEditDialog = (client: Client) => {
     setEditingClient(client);
     
-    // Separar nombre completo en nombres y apellidos
-    const nameParts = (client.name || '').trim().split(' ');
-    const lastName = nameParts.length > 1 ? nameParts.slice(-1).join(' ') : '';
-    const firstName = nameParts.length > 1 ? nameParts.slice(0, -1).join(' ') : nameParts[0] || '';
-    
-    // Limpiar el teléfono del prefijo +51 si existe
-    const cleanPhone = (client.telefono || '').replace(/^\+?51/, '');
-    
+    // Usar nombres y apellidos directamente del cliente
     setFormData({
-      firstName: firstName,
-      lastName: lastName,
+      firstName: client.nombres,
+      lastName: client.apellidos,
       dni: client.dni,
-      phone: cleanPhone,
+      phone: (client.telefono || '').replace(/^\+?51/, ''),
       email: client.email || '',
       address: client.direccion || '',
       birthday: client.fechaNacimiento || '',

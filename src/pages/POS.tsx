@@ -22,7 +22,7 @@ export default function POS() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('Efectivo');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('EFECTIVO');
   const [notes, setNotes] = useState('');
   const [discount, setDiscount] = useState(0);
   
@@ -82,13 +82,10 @@ export default function POS() {
   const pointsEarned = activeTicket ? calculateTotalPoints(activeTicket.items) : 0;
 
   const handleAddProduct = (product: Product) => {
-    const pointsValue = calculateProductPoints(product);
-    const price = product.price;
-    
-    addItem(product.id, product.name, price, pointsValue, false);
+    addItem(product, false);
     toast({
       title: 'Producto agregado',
-      description: `${product.name} - S/ ${price.toFixed(2)}`,
+      description: `${product.productoDescripcion} - S/ ${product.precio.toFixed(2)}`,
     });
   };
 
@@ -97,27 +94,24 @@ export default function POS() {
     if (!item) return;
     
     const product = products.find(p => p.id === item.productId);
-    if (!product || !product.wholesalePrice) return;
+    if (!product || !product.precioMayoreo) return;
     
-    const isCurrentlyWholesale = (item as any).isWholesale;
-    const newPrice = isCurrentlyWholesale ? product.price : product.wholesalePrice;
-    const newName = isCurrentlyWholesale ? product.name : `${product.name} (Mayoreo)`;
-    const pointsValue = calculateProductPoints(product);  // Siempre usar los puntos calculados del producto
+    const isCurrentlyWholesale = item.isWholesale || false;
     
     // Remover el item actual
     removeItem(itemIndex);
     
-    // Agregar con el nuevo precio pero los mismos puntos
-    addItem(product.id, newName, newPrice, pointsValue, !isCurrentlyWholesale);
+    // Agregar con el nuevo estado de mayoreo
+    addItem(product, !isCurrentlyWholesale);
   };
 
   const handleSelectClient = (client: Client) => {
-    setTicketClient(client.id, client.name);
+    setTicketClient(client.id, client.nombres);
     setIsClientDialogOpen(false);
     setClientSearchTerm('');
     toast({
       title: 'Cliente seleccionado',
-      description: `${client.name} - Puntos: ${client.points}`,
+      description: `${client.nombres} - Puntos: ${client.puntosAcumulados}`,
     });
   };
 
@@ -180,7 +174,7 @@ export default function POS() {
     setIsPaymentOpen(false);
     setNotes('');
     setDiscount(0);
-    setSelectedPaymentMethod('Efectivo');
+    setSelectedPaymentMethod('EFECTIVO');
   };
 
   return (
@@ -305,18 +299,18 @@ export default function POS() {
                   <div className="space-y-2">
                     {activeTicket.items.map((item, itemIndex) => {
                       const product = products.find(p => p.id === item.productId);
-                      const hasWholesalePrice = product?.wholesalePrice && product.wholesalePrice > 0;
-                      const isWholesale = (item as any).isWholesale;
+                      const hasWholesalePrice = product?.precioMayoreo && product.precioMayoreo > 0;
+                      const isWholesale = item.isWholesale || false;
                       
                       return (
                         <div key={`${item.productId}-${itemIndex}`} className="flex flex-col gap-2 p-2 bg-muted/50 rounded-lg">
                           <div className="flex items-center gap-2">
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium truncate">{item.productName}</p>
+                              <p className="font-medium truncate">{item.descripcion}</p>
                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <span>S/ {item.price.toFixed(2)}</span>
+                                <span>S/ {item.precio.toFixed(2)}</span>
                                 <Badge variant="secondary" className="text-xs">
-                                  {item.pointsValue} pts
+                                  {item.puntosValor} pts
                                 </Badge>
                                 {hasWholesalePrice && (
                                   <Badge 
@@ -338,7 +332,7 @@ export default function POS() {
                               >
                                 <Minus className="h-3 w-3" />
                               </Button>
-                              <span className="w-8 text-center font-medium">{item.quantity}</span>
+                              <span className="w-8 text-center font-medium">{item.cantidad}</span>
                               <Button
                                 size="icon"
                                 variant="outline"
@@ -534,19 +528,19 @@ export default function POS() {
                 <CardContent className="p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm truncate mb-1">{product.name}</h3>
+                      <h3 className="font-semibold text-sm truncate mb-1">{product.productoDescripcion}</h3>
                       <div className="flex flex-col gap-1 mb-2">
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-muted-foreground">Normal:</span>
                           <span className="text-lg font-bold text-primary">
-                            S/ {product.price?.toFixed(2) || '0.00'}
+                            S/ {product.precio?.toFixed(2) || '0.00'}
                           </span>
                         </div>
                        
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant={product.stock > 10 ? 'default' : 'destructive'} className="text-xs">
-                          Stock: {product.stock || 0}
+                        <Badge variant={product.cantidadActual > 10 ? 'default' : 'destructive'} className="text-xs">
+                          Stock: {product.cantidadActual || 0}
                         </Badge>
                         <Badge variant="secondary" className="text-xs">
                           +{calculateProductPoints(product)} pts

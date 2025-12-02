@@ -415,11 +415,11 @@ export default function Productos() {
                 <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
                   <CardTitle className="flex items-center gap-3 text-lg">
                     <Package className="h-5 w-5 text-primary" />
-                    {producto.name}
+                    {producto.productoDescripcion}
                   </CardTitle>
                   <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <Badge variant={producto.stock > producto.minStock ? "default" : "destructive"}>
-                      Stock: {producto.stock}
+                    <Badge variant={producto.cantidadActual > producto.cantidadMinima ? "default" : "destructive"}>
+                      Stock: {producto.cantidadActual}
                     </Badge>
                     <Button size="icon" variant="ghost" onClick={() => openMovementDialog(producto)}>
                       <ArrowUpDown className="h-4 w-4" />
@@ -436,23 +436,23 @@ export default function Productos() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Categoría</p>
-                      <p className="font-semibold">{producto.category}</p>
+                      <p className="font-semibold">{producto.categoria}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Código</p>
-                      <p className="font-semibold text-sm">{producto.barcode}</p>
+                      <p className="font-semibold text-sm">{producto.codigoBarra}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Costo</p>
-                      <p className="font-semibold">S/ {producto.cost.toFixed(2)}</p>
+                      <p className="font-semibold">S/ {producto.costo.toFixed(2)}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Precio</p>
-                      <p className="font-semibold text-primary">S/ {producto.price.toFixed(2)}</p>
+                      <p className="font-semibold text-primary">S/ {producto.precio.toFixed(2)}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Proveedor</p>
-                      <p className="font-semibold">{producto.supplier}</p>
+                      <p className="font-semibold">{producto.proveedor}</p>
                     </div>
                   </div>
                 </CardContent>

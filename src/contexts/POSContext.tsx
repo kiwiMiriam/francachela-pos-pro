@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 // Interfaz extendida para items en el ticket del POS
 interface POSItem extends SaleItem {
   productId: number;
+  puntosValor: number;
   isWholesale?: boolean;
 }
 
@@ -105,6 +106,7 @@ export function POSProvider({ children }: { children: React.ReactNode }) {
             cantidad: 1,
             precio,
             subtotal: precio,
+            puntosValor: product.valorPuntos || 0,
             isWholesale,
           };
           

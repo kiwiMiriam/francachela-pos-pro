@@ -11,6 +11,18 @@ export interface BackendPaginatedResponse<T> {
   hasPrevPage: boolean;
 }
 
+// Alias para compatibilidad
+export type PaginatedResponse<T> = BackendPaginatedResponse<T>;
+
+// Tipo para actualizar stock de productos
+export interface ProductStockUpdateRequest {
+  cantidad: number;
+  tipo: 'ENTRADA' | 'SALIDA' | 'AJUSTE';
+  observaciones?: string;
+  proveedor?: string;
+  numeroFactura?: string;
+}
+
 // Tipos específicos del backend para Clientes
 export interface ClienteBackend {
   id: number;
@@ -21,8 +33,8 @@ export interface ClienteBackend {
   telefono: string;
   fechaRegistro: string;
   puntosAcumulados: number;
-  historialCompras: any[];
-  historialCanjes: any[];
+  historialCompras: unknown[];
+  historialCanjes: unknown[];
   codigoCorto: string;
   direccion: string;
   activo: boolean;

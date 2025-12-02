@@ -1,6 +1,7 @@
 import { API_CONFIG, API_ENDPOINTS } from '@/config/api';
 import { httpClient, simulateDelay } from './httpClient';
 import type { Sale } from '@/types';
+import { normalizeSale, normalizeSales } from '@/utils/dataTransform';
 
 export const salesService = {
   /**
@@ -21,7 +22,7 @@ export const salesService = {
       const url = `${API_ENDPOINTS.SALES.BASE}${queryParams.toString() ? `?${queryParams}` : ''}`;
       const response = await httpClient.get<any>(url);
       
-      return response.data || response;
+      return normalizeSales(Array.isArray(response) ? response : response?.data ? response.data : []);
     } catch (error) {
       console.error('Error getting sales:', error);
       throw new Error('Error al cargar las ventas');
@@ -33,7 +34,8 @@ export const salesService = {
    */
   getById: async (id: number): Promise<Sale> => {
     try {
-      return await httpClient.get<Sale>(API_ENDPOINTS.SALES.BY_ID(id));
+      const sale = await httpClient.get<Sale>(API_ENDPOINTS.SALES.BY_ID(id));
+      return normalizeSale(sale);
     } catch (error) {
       console.error('Error getting sale by ID:', error);
       throw new Error('Error al cargar la venta');
@@ -46,7 +48,7 @@ export const salesService = {
   getToday: async (): Promise<Sale[]> => {
     try {
       const response = await httpClient.get<any>(API_ENDPOINTS.SALES.TODAY);
-      return response.data || response;
+      return normalizeSales(Array.isArray(response) ? response : response?.data ? response.data : []);
     } catch (error) {
       console.error('Error getting today sales:', error);
       throw new Error('Error al cargar las ventas del día');
@@ -58,7 +60,8 @@ export const salesService = {
    */
   create: async (saleData: any): Promise<Sale> => {
     try {
-      return await httpClient.post<Sale>(API_ENDPOINTS.SALES.BASE, saleData);
+      const sale = await httpClient.post<Sale>(API_ENDPOINTS.SALES.BASE, saleData);
+      return normalizeSale(sale);
     } catch (error) {
       console.error('Error creating sale:', error);
       throw new Error('Error al crear la venta');
@@ -70,7 +73,8 @@ export const salesService = {
    */
   cancel: async (id: number): Promise<Sale> => {
     try {
-      return await httpClient.patch<Sale>(API_ENDPOINTS.SALES.CANCEL(id), {});
+      const sale = await httpClient.patch<Sale>(API_ENDPOINTS.SALES.CANCEL(id), {});
+      return normalizeSale(sale);
     } catch (error) {
       console.error('Error canceling sale:', error);
       throw new Error('Error al anular la venta');

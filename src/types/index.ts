@@ -70,10 +70,12 @@ export interface Client {
   fechaRegistro?: string;
   codigoCorto?: string;
   activo?: boolean;
-  historialCompras?: any[];
-  historialCanjes?: any[];
+  historialCompras?: unknown[];
+  historialCanjes?: unknown[];
   fechaCreacion?: string;
   fechaActualizacion?: string;
+  // Helper para obtener nombre completo
+  readonly name?: string;
 }
 
 // Sale Item type - nombres en español

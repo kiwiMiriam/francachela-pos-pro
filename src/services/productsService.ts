@@ -1,7 +1,8 @@
 import { API_CONFIG, API_ENDPOINTS } from '@/config/api';
 import { httpClient, simulateDelay } from './httpClient';
 import type { Product } from '@/types';
-import type { ProductoQueryParams } from '@/types/backend';
+import type { ProductoQueryParams, PaginatedResponse, ProductStockUpdateRequest } from '@/types/backend';
+import { normalizeProduct, normalizeProducts } from '@/utils/dataTransform';
 
 export const productsService = {
   /**
@@ -24,10 +25,13 @@ export const productsService = {
       if (params?.mostrar !== undefined) queryParams.append('mostrar', params.mostrar.toString());
       
       const url = `${API_ENDPOINTS.PRODUCTS.BASE}${queryParams.toString() ? `?${queryParams}` : ''}`;
-      const response = await httpClient.get<any>(url);
+      const response = await httpClient.get<PaginatedResponse<Product> | Product[]>(url);
       
       // El backend devuelve { data: [], total, page, etc }
-      return response.data || response;
+      if (response && typeof response === 'object' && 'data' in response) {
+        return normalizeProducts((response as PaginatedResponse<Product>).data);
+      }
+      return normalizeProducts(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Error getting products:', error);
       throw new Error('Error al cargar los productos');
@@ -39,7 +43,8 @@ export const productsService = {
    */
   getById: async (id: number): Promise<Product> => {
     try {
-      return await httpClient.get<Product>(API_ENDPOINTS.PRODUCTS.BY_ID(id));
+      const product = await httpClient.get<Product>(API_ENDPOINTS.PRODUCTS.BY_ID(id));
+      return normalizeProduct(product);
     } catch (error) {
       console.error('Error getting product by ID:', error);
       throw new Error('Error al cargar el producto');
@@ -52,9 +57,12 @@ export const productsService = {
   search: async (query: string): Promise<Product[]> => {
     try {
       const queryParams = new URLSearchParams({ q: query });
-      const response = await httpClient.get<any>(`${API_ENDPOINTS.PRODUCTS.SEARCH}?${queryParams}`);
+      const response = await httpClient.get<PaginatedResponse<Product> | Product[]>(`${API_ENDPOINTS.PRODUCTS.SEARCH}?${queryParams}`);
       
-      return response.data || response || [];
+      if (response && typeof response === 'object' && 'data' in response) {
+        return normalizeProducts((response as PaginatedResponse<Product>).data);
+      }
+      return normalizeProducts(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Error searching products:', error);
       throw new Error('Error al buscar productos');
@@ -78,7 +86,8 @@ export const productsService = {
    */
   getLowStock: async (): Promise<Product[]> => {
     try {
-      return await httpClient.get<Product[]>(API_ENDPOINTS.PRODUCTS.LOW_STOCK);
+      const products = await httpClient.get<Product[]>(API_ENDPOINTS.PRODUCTS.LOW_STOCK);
+      return normalizeProducts(Array.isArray(products) ? products : []);
     } catch (error) {
       console.error('Error getting low stock products:', error);
       throw new Error('Error al cargar productos con stock bajo');
@@ -90,7 +99,8 @@ export const productsService = {
    */
   create: async (productData: Omit<Product, 'id'>): Promise<Product> => {
     try {
-      return await httpClient.post<Product>(API_ENDPOINTS.PRODUCTS.BASE, productData);
+      const product = await httpClient.post<Product>(API_ENDPOINTS.PRODUCTS.BASE, productData);
+      return normalizeProduct(product);
     } catch (error) {
       console.error('Error creating product:', error);
       throw new Error('Error al crear el producto');
@@ -102,7 +112,8 @@ export const productsService = {
    */
   update: async (id: number, productData: Partial<Product>): Promise<Product> => {
     try {
-      return await httpClient.patch<Product>(API_ENDPOINTS.PRODUCTS.BY_ID(id), productData);
+      const product = await httpClient.patch<Product>(API_ENDPOINTS.PRODUCTS.BY_ID(id), productData);
+      return normalizeProduct(product);
     } catch (error) {
       console.error('Error updating product:', error);
       throw new Error('Error al actualizar el producto');
@@ -124,9 +135,10 @@ export const productsService = {
   /**
    * Actualizar stock del producto
    */
-  updateStock: async (id: number, stockData: any): Promise<Product> => {
+  updateStock: async (id: number, stockData: ProductStockUpdateRequest): Promise<Product> => {
     try {
-      return await httpClient.patch<Product>(API_ENDPOINTS.PRODUCTS.UPDATE_STOCK(id), stockData);
+      const product = await httpClient.patch<Product>(API_ENDPOINTS.PRODUCTS.UPDATE_STOCK(id), stockData);
+      return normalizeProduct(product);
     } catch (error) {
       console.error('Error updating product stock:', error);
       throw new Error('Error al actualizar el stock del producto');
@@ -138,8 +150,11 @@ export const productsService = {
    */
   getSuppliers: async (): Promise<string[]> => {
     try {
-      const products = await this.getAll();
-      const suppliers = [...new Set(products.map(p => p.proveedor))];
+      // getAll() siempre retorna un array (con fallback en getAll)
+      const result = (await this.getAll())!;
+      const products = result as Product[];
+      if (!products || products.length === 0) return [];
+      const suppliers = [...new Set(products.map((p: Product) => p.proveedor).filter(Boolean))];
       return suppliers.sort();
     } catch (error) {
       console.error('Error getting suppliers:', error);

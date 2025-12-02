@@ -1,7 +1,8 @@
 import { API_CONFIG, API_ENDPOINTS } from '@/config/api';
 import { httpClient, simulateDelay } from './httpClient';
 import type { Client } from '@/types';
-import type { ClienteQueryParams } from '@/types/backend';
+import type { ClienteQueryParams, PaginatedResponse } from '@/types/backend';
+import { normalizeClient, normalizeClients } from '@/utils/dataTransform';
 
 export const clientsService = {
   /**
@@ -22,9 +23,12 @@ export const clientsService = {
       if (params?.activo !== undefined) queryParams.append('activo', params.activo.toString());
       
       const url = `${API_ENDPOINTS.CLIENTS.BASE}${queryParams.toString() ? `?${queryParams}` : ''}`;
-      const response = await httpClient.get<any>(url);
+      const response = await httpClient.get<PaginatedResponse<Client> | Client[]>(url);
       
-      return response.data || response;
+      if (response && typeof response === 'object' && 'data' in response) {
+        return normalizeClients((response as PaginatedResponse<Client>).data);
+      }
+      return normalizeClients(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Error getting clients:', error);
       throw new Error('Error al cargar los clientes');
@@ -36,7 +40,8 @@ export const clientsService = {
    */
   getById: async (id: number): Promise<Client> => {
     try {
-      return await httpClient.get<Client>(API_ENDPOINTS.CLIENTS.BY_ID(id));
+      const client = await httpClient.get<Client>(API_ENDPOINTS.CLIENTS.BY_ID(id));
+      return normalizeClient(client);
     } catch (error) {
       console.error('Error getting client by ID:', error);
       throw new Error('Error al cargar el cliente');
@@ -48,7 +53,9 @@ export const clientsService = {
    */
   search: async (query: string): Promise<Client[]> => {
     try {
-      return await this.getAll({ search: query });
+      // getAll() siempre retorna un array (con fallback)
+      const result = (await this.getAll({ search: query }))!;
+      return (result as Client[]) || [];
     } catch (error) {
       console.error('Error searching clients:', error);
       throw new Error('Error al buscar clientes');
@@ -60,8 +67,11 @@ export const clientsService = {
    */
   getBirthdays: async (): Promise<Client[]> => {
     try {
-      const response = await httpClient.get<any>(API_ENDPOINTS.CLIENTS.BIRTHDAYS);
-      return response.data || response || [];
+      const response = await httpClient.get<PaginatedResponse<Client> | Client[]>(API_ENDPOINTS.CLIENTS.BIRTHDAYS);
+      if (response && typeof response === 'object' && 'data' in response) {
+        return normalizeClients((response as PaginatedResponse<Client>).data);
+      }
+      return normalizeClients(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Error getting birthday clients:', error);
       throw new Error('Error al cargar clientes con cumpleaños');
@@ -74,8 +84,11 @@ export const clientsService = {
   getTopClients: async (limit: number = 10): Promise<Client[]> => {
     try {
       const queryParams = new URLSearchParams({ limit: limit.toString() });
-      const response = await httpClient.get<any>(`${API_ENDPOINTS.CLIENTS.TOP}?${queryParams}`);
-      return response.data || response || [];
+      const response = await httpClient.get<PaginatedResponse<Client> | Client[]>(`${API_ENDPOINTS.CLIENTS.TOP}?${queryParams}`);
+      if (response && typeof response === 'object' && 'data' in response) {
+        return normalizeClients((response as PaginatedResponse<Client>).data);
+      }
+      return normalizeClients(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Error getting top clients:', error);
       throw new Error('Error al cargar clientes top');
@@ -87,7 +100,8 @@ export const clientsService = {
    */
   getByDni: async (dni: string): Promise<Client | null> => {
     try {
-      return await httpClient.get<Client>(API_ENDPOINTS.CLIENTS.BY_DNI(dni));
+      const client = await httpClient.get<Client>(API_ENDPOINTS.CLIENTS.BY_DNI(dni));
+      return normalizeClient(client);
     } catch (error) {
       console.error('Error getting client by DNI:', error);
       return null;
@@ -99,7 +113,8 @@ export const clientsService = {
    */
   create: async (clientData: Omit<Client, 'id'>): Promise<Client> => {
     try {
-      return await httpClient.post<Client>(API_ENDPOINTS.CLIENTS.BASE, clientData);
+      const client = await httpClient.post<Client>(API_ENDPOINTS.CLIENTS.BASE, clientData);
+      return normalizeClient(client);
     } catch (error) {
       console.error('Error creating client:', error);
       throw new Error('Error al crear el cliente');
@@ -111,7 +126,8 @@ export const clientsService = {
    */
   update: async (id: number, clientData: Partial<Client>): Promise<Client> => {
     try {
-      return await httpClient.patch<Client>(API_ENDPOINTS.CLIENTS.BY_ID(id), clientData);
+      const client = await httpClient.patch<Client>(API_ENDPOINTS.CLIENTS.BY_ID(id), clientData);
+      return normalizeClient(client);
     } catch (error) {
       console.error('Error updating client:', error);
       throw new Error('Error al actualizar el cliente');
@@ -135,7 +151,8 @@ export const clientsService = {
    */
   validateDni: async (dni: string, excludeId?: number): Promise<boolean> => {
     try {
-      const existingClient = await this.getByDni(dni);
+      // getByDni() retorna Client | null
+      const existingClient = (await this.getByDni(dni))!;
       if (existingClient && existingClient.id !== excludeId) {
         return false; // DNI ya existe
       }

@@ -28,8 +28,24 @@ export default function Ventas() {
     loadVentas();
   }, []);
 
+  const filterVentas = () => {
+    // Asegurar que ventas sea un array antes de usar spread operator
+    let filtered = [...(ventas || [])];
+
+    if (dateFilter.startDate) {
+      filtered = filtered.filter(v => new Date(v.fecha) >= new Date(dateFilter.startDate));
+    }
+    if (dateFilter.endDate) {
+      filtered = filtered.filter(v => new Date(v.fecha) <= new Date(dateFilter.endDate));
+    }
+    
+    setFilteredVentas(filtered);
+    setCurrentPage(1);
+  };
+
   useEffect(() => {
     filterVentas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ventas, dateFilter]);
 
   const loadVentas = async () => {
@@ -41,21 +57,6 @@ export default function Ventas() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const filterVentas = () => {
-    // Asegurar que ventas sea un array antes de usar spread operator
-    let filtered = [...(ventas || [])];
-
-    if (dateFilter.startDate) {
-      filtered = filtered.filter(v => new Date(v.date) >= new Date(dateFilter.startDate));
-    }
-
-    if (dateFilter.endDate) {
-      filtered = filtered.filter(v => new Date(v.date) <= new Date(dateFilter.endDate + 'T23:59:59'));
-    }
-
-    setFilteredVentas(filtered);
   };
 
   const handleCancelSale = async (id: number) => {
@@ -83,13 +84,13 @@ export default function Ventas() {
 
     const headers = ['ID', 'Fecha', 'Cliente', 'Total', 'Método Pago', 'Cajero', 'Estado'];
     const rows = filteredVentas.map(v => [
-      v.ticketNumber,
-      new Date(v.date).toLocaleString(),
-      v.clientName || 'Venta Rápida',
+      v.ticketId,
+      new Date(v.fecha).toLocaleString(),
+      v.cliente?.nombres + ' ' + v.cliente?.apellidos || 'Venta Rápida',
       v.total.toFixed(2),
-      v.paymentMethod,
-      v.cashier,
-      v.status,
+      v.metodoPago,
+      v.cajero,
+      v.estado,
     ]);
 
     const csvContent = [
@@ -175,19 +176,19 @@ export default function Ventas() {
               <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <CardTitle className="flex items-center gap-3 text-lg">
                   <TrendingUp className="h-5 w-5 text-primary" />
-                  {venta.ticketNumber}
+                  {venta.ticketId}
                 </CardTitle>
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   <Badge variant="default" className="text-lg font-bold">
                     S/ {venta.total.toFixed(2)}
                   </Badge>
-                  <Badge variant={venta.status === 'completada' ? 'default' : 'destructive'}>
-                    {venta.status.toUpperCase()}
+                  <Badge variant={venta.estado === 'completada' ? 'default' : 'destructive'}>
+                    {venta.estado.toUpperCase()}
                   </Badge>
                   <Button size="icon" variant="ghost" onClick={() => openDetailDialog(venta)}>
                     <Eye className="h-4 w-4" />
                   </Button>
-                  {venta.status === 'completada' && (
+                  {venta.estado === 'completada' && (
                     <Button size="icon" variant="ghost" onClick={() => handleCancelSale(venta.id)}>
                       <XCircle className="h-4 w-4" />
                     </Button>
@@ -201,33 +202,33 @@ export default function Ventas() {
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">Fecha y hora</p>
-                    <p className="font-semibold text-sm">{new Date(venta.date).toLocaleString()}</p>
+                    <p className="font-semibold text-sm">{new Date(venta.fecha).toLocaleString()}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">Cliente</p>
-                    <p className="font-semibold text-sm">{venta.clientName || 'Venta Rápida'}</p>
+                    <p className="font-semibold text-sm">{venta.cliente?.nombres + ' ' + venta.cliente?.apellidos || 'Venta Rápida'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">Cajero</p>
-                    <p className="font-semibold text-sm">{venta.cashier}</p>
+                    <p className="font-semibold text-sm">{venta.cajero}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <CreditCard className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-xs text-muted-foreground">Método de pago</p>
-                    <p className="font-semibold text-sm">{venta.paymentMethod}</p>
+                    <p className="font-semibold text-sm">{venta.metodoPago}</p>
                   </div>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Productos</p>
-                  <p className="font-semibold text-sm">{venta.items.length} items</p>
+                  <p className="font-semibold text-sm">{venta.listaProductos.length} items</p>
                 </div>
               </div>
             </CardContent>
@@ -293,9 +294,9 @@ export default function Ventas() {
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Detalle de Venta - {selectedSale?.ticketNumber}</DialogTitle>
+            <DialogTitle>Detalle de Venta - {selectedSale?.ticketId}</DialogTitle>
             <DialogDescription>
-              {selectedSale && new Date(selectedSale.date).toLocaleString()}
+              {selectedSale && new Date(selectedSale.fecha).toLocaleString()}
             </DialogDescription>
           </DialogHeader>
           
@@ -304,20 +305,20 @@ export default function Ventas() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Cliente</p>
-                  <p className="font-semibold">{selectedSale.clientName || 'Venta Rápida'}</p>
+                  <p className="font-semibold">{selectedSale.cliente?.nombres + ' ' + selectedSale.cliente?.apellidos || 'Venta Rápida'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Cajero</p>
-                  <p className="font-semibold">{selectedSale.cashier}</p>
+                  <p className="font-semibold">{selectedSale.cajero}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Método de Pago</p>
-                  <p className="font-semibold">{selectedSale.paymentMethod}</p>
+                  <p className="font-semibold">{selectedSale.metodoPago}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Estado</p>
-                  <Badge variant={selectedSale.status === 'completada' ? 'default' : 'destructive'}>
-                    {selectedSale.status.toUpperCase()}
+                  <Badge variant={selectedSale.estado === 'completada' ? 'default' : 'destructive'}>
+                    {selectedSale.estado.toUpperCase()}
                   </Badge>
                 </div>
               </div>
@@ -325,12 +326,12 @@ export default function Ventas() {
               <div className="border-t pt-4">
                 <h3 className="font-semibold mb-3">Productos</h3>
                 <div className="space-y-2">
-                  {selectedSale.items.map((item, index) => (
+                  {selectedSale.listaProductos.map((item, index) => (
                     <div key={index} className="flex justify-between items-center">
                       <div>
-                        <p className="font-medium">{item.productName}</p>
+                        <p className="font-medium">{item.descripcion}</p>
                         <p className="text-sm text-muted-foreground">
-                          {item.quantity} x S/ {item.price.toFixed(2)}
+                          {item.cantidad} x S/ {item.precio.toFixed(2)}
                         </p>
                       </div>
                       <p className="font-semibold">S/ {item.subtotal.toFixed(2)}</p>
@@ -342,12 +343,12 @@ export default function Ventas() {
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between">
                   <p className="text-muted-foreground">Subtotal</p>
-                  <p className="font-semibold">S/ {selectedSale.subtotal.toFixed(2)}</p>
+                  <p className="font-semibold">S/ {selectedSale.subTotal.toFixed(2)}</p>
                 </div>
-                {selectedSale.discount > 0 && (
+                {selectedSale.descuento > 0 && (
                   <div className="flex justify-between text-destructive">
                     <p>Descuento</p>
-                    <p className="font-semibold">- S/ {selectedSale.discount.toFixed(2)}</p>
+                    <p className="font-semibold">- S/ {selectedSale.descuento.toFixed(2)}</p>
                   </div>
                 )}
                 <div className="flex justify-between text-lg font-bold border-t pt-2">
@@ -356,17 +357,17 @@ export default function Ventas() {
                 </div>
               </div>
 
-              {selectedSale.pointsEarned && selectedSale.pointsEarned > 0 && (
+              {selectedSale.puntosOtorgados && selectedSale.puntosOtorgados > 0 && (
                 <div className="border-t pt-4">
                   <p className="text-sm text-muted-foreground">Puntos Ganados</p>
-                  <p className="font-semibold text-primary">{selectedSale.pointsEarned} puntos</p>
+                  <p className="font-semibold text-primary">{selectedSale.puntosOtorgados} puntos</p>
                 </div>
               )}
 
-              {selectedSale.notes && (
+              {selectedSale.comentario && (
                 <div className="border-t pt-4">
                   <p className="text-sm text-muted-foreground">Comentarios</p>
-                  <p className="font-semibold">{selectedSale.notes}</p>
+                  <p className="font-semibold">{selectedSale.comentario}</p>
                 </div>
               )}
             </div>

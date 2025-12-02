@@ -4,7 +4,7 @@ import type { InventoryMovement } from '@/types';
 import type { 
   InventoryMovementCreateRequest,
   PaginationParams,
-  DateRangeFilter 
+  DateRangeFilterParams 
 } from '@/types/api';
 
 export const inventoryService = {
@@ -82,7 +82,8 @@ export const inventoryService = {
       if (params?.limit) queryParams.append('limit', params.limit.toString());
       
       const url = `${API_ENDPOINTS.INVENTORY_MOVEMENTS.BASE}${queryParams.toString() ? `?${queryParams}` : ''}`;
-      return await httpClient.get<InventoryMovement[]>(url);
+      const response = await httpClient.get<InventoryMovement[]>(url);
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error('Error getting inventory movements:', error);
       throw new Error('Error al cargar los movimientos de inventario');
@@ -130,7 +131,7 @@ export const inventoryService = {
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
         
-        const allMovements = await this.getMovements();
+        const allMovements = (await this.getMovements())!;
         return allMovements.filter(movement => 
           movement.HORA.startsWith(todayStr)
         );
@@ -146,25 +147,24 @@ export const inventoryService = {
   /**
    * Obtener movimientos por rango de fechas
    */
-  getByDateRange: async (filters: DateRangeFilter): Promise<InventoryMovement[]> => {
+  getByDateRange: async (filters: DateRangeFilterParams): Promise<InventoryMovement[]> => {
     try {
       if (API_CONFIG.USE_MOCKS) {
         await simulateDelay();
         
-        const fromDate = new Date(filters.from);
-        const toDate = new Date(filters.to);
+        const fromDate = new Date(filters.startDate || '');
+        const toDate = new Date(filters.endDate || '');
         
-        const allMovements = await this.getMovements();
+        const allMovements = (await this.getMovements())!;
         return allMovements.filter(movement => {
           const movementDate = new Date(movement.HORA);
           return movementDate >= fromDate && movementDate <= toDate;
         });
       }
       
-      const queryParams = new URLSearchParams({
-        from: filters.from,
-        to: filters.to,
-      });
+      const queryParams = new URLSearchParams();
+      if (filters.startDate) queryParams.append('startDate', filters.startDate);
+      if (filters.endDate) queryParams.append('endDate', filters.endDate);
       
       return await httpClient.get<InventoryMovement[]>(`${API_ENDPOINTS.INVENTORY_MOVEMENTS.BY_RANGE}?${queryParams}`);
     } catch (error) {
@@ -181,7 +181,7 @@ export const inventoryService = {
       if (API_CONFIG.USE_MOCKS) {
         await simulateDelay();
         
-        const allMovements = await this.getMovements();
+        const allMovements = (await this.getMovements())!;
         return allMovements.filter(movement => 
           movement.TIPO.toLowerCase() === tipo.toLowerCase()
         );
@@ -202,7 +202,7 @@ export const inventoryService = {
       if (API_CONFIG.USE_MOCKS) {
         await simulateDelay();
         
-        const allMovements = await this.getMovements();
+        const allMovements = (await this.getMovements())!;
         return allMovements.filter(movement => 
           movement.CAJERO.toLowerCase().includes(cajero.toLowerCase())
         );
@@ -226,11 +226,11 @@ export const inventoryService = {
         const newMovement: InventoryMovement = {
           id: Date.now(),
           TIPO: 'entrada',
-          PRODUCTO_ID: entryData.productoId,
-          PRODUCTO_NOMBRE: entryData.productoNombre || `Producto ${entryData.productoId}`,
+          PRODUCTO_ID: 0,
+          PRODUCTO_NOMBRE: 'Producto',
           CANTIDAD: entryData.cantidad,
           HORA: new Date().toISOString(),
-          DESCRIPCION: entryData.descripcion || 'Entrada de mercancía',
+          DESCRIPCION: entryData.codigoBarra || 'Entrada de mercancía',
           CAJERO: entryData.cajero || 'Sistema',
         };
         
@@ -255,11 +255,11 @@ export const inventoryService = {
         const newMovement: InventoryMovement = {
           id: Date.now(),
           TIPO: 'ajuste',
-          PRODUCTO_ID: adjustmentData.productoId,
-          PRODUCTO_NOMBRE: adjustmentData.productoNombre || `Producto ${adjustmentData.productoId}`,
+          PRODUCTO_ID: 0,
+          PRODUCTO_NOMBRE: 'Producto',
           CANTIDAD: adjustmentData.cantidad,
           HORA: new Date().toISOString(),
-          DESCRIPCION: adjustmentData.descripcion || 'Ajuste de inventario',
+          DESCRIPCION: adjustmentData.codigoBarra || 'Ajuste de inventario',
           CAJERO: adjustmentData.cajero || 'Sistema',
         };
         
@@ -284,11 +284,11 @@ export const inventoryService = {
         const newMovement: InventoryMovement = {
           id: Date.now(),
           TIPO: 'salida',
-          PRODUCTO_ID: saleData.productoId,
-          PRODUCTO_NOMBRE: saleData.productoNombre || `Producto ${saleData.productoId}`,
+          PRODUCTO_ID: 0,
+          PRODUCTO_NOMBRE: 'Producto',
           CANTIDAD: saleData.cantidad,
           HORA: new Date().toISOString(),
-          DESCRIPCION: saleData.descripcion || 'Venta',
+          DESCRIPCION: saleData.codigoBarra || 'Venta',
           CAJERO: saleData.cajero || 'Sistema',
         };
         
@@ -321,12 +321,11 @@ export const inventoryService = {
       
       // Mapear datos del frontend al formato del backend
       const createRequest: InventoryMovementCreateRequest = {
-        productoId: movementData.PRODUCTO_ID,
-        productoNombre: movementData.PRODUCTO_NOMBRE,
+        codigoBarra: movementData.PRODUCTO_NOMBRE || 'producto',
         tipo: movementData.TIPO.toUpperCase() as 'ENTRADA' | 'SALIDA' | 'AJUSTE',
         cantidad: movementData.CANTIDAD,
-        descripcion: movementData.DESCRIPCION,
         cajero: movementData.CAJERO,
+        proveedor: movementData.DESCRIPCION,
       };
       
       return await httpClient.post<InventoryMovement>(API_ENDPOINTS.INVENTORY_MOVEMENTS.BASE, createRequest);
@@ -339,16 +338,17 @@ export const inventoryService = {
   /**
    * Obtener estadísticas de inventario
    */
-  getStatistics: async (filters?: DateRangeFilter): Promise<any> => {
+  getStatistics: async (filters?: DateRangeFilterParams): Promise<Record<string, unknown>> => {
     try {
       if (API_CONFIG.USE_MOCKS) {
         await simulateDelay();
         
-        let movements = await this.getMovements();
+        const allMovements = (await this.getMovements())!;
+        let movements = Array.isArray(allMovements) ? allMovements : [];
         
         if (filters) {
-          const fromDate = new Date(filters.from);
-          const toDate = new Date(filters.to);
+          const fromDate = new Date(filters.startDate || '');
+          const toDate = new Date(filters.endDate || '');
           
           movements = movements.filter(movement => {
             const movementDate = new Date(movement.HORA);
@@ -387,11 +387,11 @@ export const inventoryService = {
       }
       
       const queryParams = new URLSearchParams();
-      if (filters?.from) queryParams.append('from', filters.from);
-      if (filters?.to) queryParams.append('to', filters.to);
+      if (filters?.startDate) queryParams.append('startDate', filters.startDate);
+      if (filters?.endDate) queryParams.append('endDate', filters.endDate);
       
       const url = `${API_ENDPOINTS.INVENTORY_MOVEMENTS.STATISTICS}${queryParams.toString() ? `?${queryParams}` : ''}`;
-      return await httpClient.get<any>(url);
+      return await httpClient.get<Record<string, unknown>>(url);
     } catch (error) {
       console.error('Error getting inventory statistics:', error);
       throw new Error('Error al cargar las estadísticas de inventario');

@@ -330,8 +330,8 @@ export default function Promociones() {
                       <Calendar className="h-4 w-4" />
                       {new Date(promo.startDate).toLocaleDateString()} - {new Date(promo.endDate).toLocaleDateString()}
                     </div>
-                    <Badge variant="outline">{promo.type.toUpperCase()}</Badge>
-                    <span className="font-semibold">{promo.value}{promo.type === 'percentage' ? '%' : ' soles'}</span>
+                    <Badge variant="outline">{(promo.type || 'percentage').toUpperCase()}</Badge>
+                    <span className="font-semibold">{promo.value}{(promo.type || 'percentage') === 'percentage' ? '%' : ' soles'}</span>
                   </div>
                 </CardContent>
               </Card>

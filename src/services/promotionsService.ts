@@ -4,8 +4,10 @@ import { mockPromotionsAligned } from './mockDataAligned';
 import type { Promotion } from '@/types';
 import type { 
   PromotionCreateRequest,
-  PaginationParams 
+  PaginationParams,
+  PaginatedResponse 
 } from '@/types/api';
+import { toNumber, normalizePromotion, normalizePromotions } from '@/utils/dataTransform';
 
 export const promotionsService = {
   /**
@@ -37,7 +39,13 @@ export const promotionsService = {
       if (params?.limit) queryParams.append('limit', params.limit.toString());
       
       const url = `${API_ENDPOINTS.PROMOTIONS.BASE}${queryParams.toString() ? `?${queryParams}` : ''}`;
-      return await httpClient.get<Promotion[]>(url);
+      const response = await httpClient.get<PaginatedResponse<Promotion> | Promotion[]>(url);
+      
+      // El backend devuelve { data: [], total, page, etc }
+      if (response && typeof response === 'object' && 'data' in response) {
+        return normalizePromotions((response as PaginatedResponse<Promotion>).data);
+      }
+      return normalizePromotions(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Error getting promotions:', error);
       throw new Error('Error al cargar las promociones');
@@ -59,7 +67,8 @@ export const promotionsService = {
         return promotion;
       }
       
-      return await httpClient.get<Promotion>(API_ENDPOINTS.PROMOTIONS.BY_ID(id));
+      const promotion = await httpClient.get<Promotion>(API_ENDPOINTS.PROMOTIONS.BY_ID(id));
+      return normalizePromotion(promotion);
     } catch (error) {
       console.error('Error getting promotion by ID:', error);
       throw new Error('Error al cargar la promoción');
@@ -85,7 +94,11 @@ export const promotionsService = {
         });
       }
       
-      return await httpClient.get<Promotion[]>(API_ENDPOINTS.PROMOTIONS.ACTIVE);
+      const promotions = await httpClient.get<PaginatedResponse<Promotion> | Promotion[]>(API_ENDPOINTS.PROMOTIONS.ACTIVE);
+      if (promotions && typeof promotions === 'object' && 'data' in promotions) {
+        return normalizePromotions((promotions as PaginatedResponse<Promotion>).data);
+      }
+      return normalizePromotions(Array.isArray(promotions) ? promotions : []);
     } catch (error) {
       console.error('Error getting active promotions:', error);
       throw new Error('Error al cargar las promociones activas');
@@ -121,7 +134,8 @@ export const promotionsService = {
         active: promotionData.active,
       };
       
-      return await httpClient.post<Promotion>(API_ENDPOINTS.PROMOTIONS.BASE, createRequest);
+      const promotion = await httpClient.post<Promotion>(API_ENDPOINTS.PROMOTIONS.BASE, createRequest);
+      return normalizePromotion(promotion);
     } catch (error) {
       console.error('Error creating promotion:', error);
       throw new Error('Error al crear la promoción');
@@ -160,7 +174,8 @@ export const promotionsService = {
       if (promotionData.productIds) updateRequest.productosId = promotionData.productIds;
       if (promotionData.active !== undefined) updateRequest.active = promotionData.active;
       
-      return await httpClient.patch<Promotion>(API_ENDPOINTS.PROMOTIONS.BY_ID(id), updateRequest);
+      const promotion = await httpClient.patch<Promotion>(API_ENDPOINTS.PROMOTIONS.BY_ID(id), updateRequest);
+      return normalizePromotion(promotion);
     } catch (error) {
       console.error('Error updating promotion:', error);
       throw new Error('Error al actualizar la promoción');
@@ -208,7 +223,7 @@ export const promotionsService = {
         return mockPromotionsAligned[index];
       }
       
-      return await httpClient.patch<Promotion>(API_ENDPOINTS.PROMOTIONS.ACTIVATE(id));
+      return await httpClient.patch<Promotion>(API_ENDPOINTS.PROMOTIONS.ACTIVATE(id)).then(normalizePromotion);
     } catch (error) {
       console.error('Error activating promotion:', error);
       throw new Error('Error al activar la promoción');
@@ -232,7 +247,7 @@ export const promotionsService = {
         return mockPromotionsAligned[index];
       }
       
-      return await httpClient.patch<Promotion>(API_ENDPOINTS.PROMOTIONS.DEACTIVATE(id));
+      return await httpClient.patch<Promotion>(API_ENDPOINTS.PROMOTIONS.DEACTIVATE(id)).then(normalizePromotion);
     } catch (error) {
       console.error('Error deactivating promotion:', error);
       throw new Error('Error al desactivar la promoción');

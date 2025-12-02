@@ -19,12 +19,27 @@ import type {
   Settings,
   InventoryMovement
 } from '@/types';
+import type {
+  ProductStockUpdateRequest,
+  SalesStatistics,
+  ClientStatistics,
+  CashRegisterStatistics,
+  FilterParams,
+  DateRangeFilterParams,
+  GenericStatistics,
+  SaleCreateRequest,
+  CashRegisterOpenRequest,
+  CashRegisterCloseRequest,
+  ExpenseCreateRequest,
+  InventoryMovementCreateRequest,
+} from '@/types/api';
 
 // Importar los nuevos servicios especializados
 import { productsService } from './productsService';
 import { clientsService } from './clientsService';
 import { salesService } from './salesService';
 import { promotionsService } from './promotionsService';
+import { combosService } from './combosService';
 import { cashRegisterService } from './cashRegisterService';
 import { expensesService } from './expensesService';
 import { inventoryService } from './inventoryService';
@@ -42,9 +57,10 @@ import {
 } from './mockDataAligned';
 
 // Helper function para manejar errores
-const handleApiError = (error: any): never => {
+const handleApiError = (error: unknown): never => {
   console.error('API Error:', error);
-  throw new Error(error.message || 'Error de carga');
+  const errorMessage = error instanceof Error ? error.message : 'Error de carga';
+  throw new Error(errorMessage);
 };
 
 // ============================================================================
@@ -116,7 +132,7 @@ export const productsAPI = {
     }
   },
 
-  updateStock: async (id: number, stockData: any): Promise<Product> => {
+  updateStock: async (id: number, stockData: ProductStockUpdateRequest): Promise<Product> => {
     try {
       return await productsService.updateStock(id, stockData);
     } catch (error) {
@@ -224,7 +240,7 @@ export const salesAPI = {
     }
   },
 
-  create: async (sale: any): Promise<Sale> => {
+  create: async (sale: SaleCreateRequest): Promise<Sale> => {
     try {
       return await salesService.create(sale);
     } catch (error) {
@@ -241,13 +257,14 @@ export const salesAPI = {
   },
 
   // Métodos adicionales del nuevo servicio
-  search: async (query: string): Promise<Sale[]> => {
-    try {
-      return await salesService.search(query);
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
+  // TODO: Implementar estos métodos en salesService
+  // search: async (query: string): Promise<Sale[]> => {
+  //   try {
+  //     return await salesService.search(query);
+  //   } catch (error) {
+  //     return handleApiError(error);
+  //   }
+  // },
 
   getToday: async (): Promise<Sale[]> => {
     try {
@@ -257,21 +274,21 @@ export const salesAPI = {
     }
   },
 
-  getByClient: async (clientId: number): Promise<Sale[]> => {
-    try {
-      return await salesService.getByClient(clientId);
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
+  // getByClient: async (clientId: number): Promise<Sale[]> => {
+  //   try {
+  //     return await salesService.getByClient(clientId);
+  //   } catch (error) {
+  //     return handleApiError(error);
+  //   }
+  // },
 
-  getStatistics: async (filters?: any): Promise<any> => {
-    try {
-      return await salesService.getStatistics(filters);
-    } catch (error) {
-      return handleApiError(error);
-    }
-  },
+  // getStatistics: async (filters?: FilterParams): Promise<SalesStatistics> => {
+  //   try {
+  //     return await salesService.getStatistics(filters);
+  //   } catch (error) {
+  //     return handleApiError(error);
+  //   }
+  // },
 };
 
 // ============================================================================
@@ -352,11 +369,7 @@ export const promotionsAPI = {
 export const combosAPI = {
   getAll: async (): Promise<Combo[]> => {
     try {
-      if (API_CONFIG.USE_MOCKS) {
-        return mockCombosAligned;
-      }
-      // TODO: Implementar servicio de combos
-      return mockCombosAligned;
+      return await combosService.getAll();
     } catch (error) {
       return handleApiError(error);
     }
@@ -364,9 +377,7 @@ export const combosAPI = {
 
   getById: async (id: number): Promise<Combo> => {
     try {
-      const combo = mockCombosAligned.find(c => c.id === id);
-      if (!combo) throw new Error('Combo no encontrado');
-      return combo;
+      return await combosService.getById(id);
     } catch (error) {
       return handleApiError(error);
     }
@@ -374,12 +385,7 @@ export const combosAPI = {
 
   create: async (combo: Omit<Combo, 'id'>): Promise<Combo> => {
     try {
-      const newCombo = {
-        ...combo,
-        id: Math.max(...mockCombosAligned.map(c => c.id)) + 1
-      };
-      mockCombosAligned.push(newCombo);
-      return newCombo;
+      return await combosService.create(combo);
     } catch (error) {
       return handleApiError(error);
     }
@@ -387,10 +393,7 @@ export const combosAPI = {
 
   update: async (id: number, combo: Partial<Combo>): Promise<Combo> => {
     try {
-      const index = mockCombosAligned.findIndex(c => c.id === id);
-      if (index === -1) throw new Error('Combo no encontrado');
-      mockCombosAligned[index] = { ...mockCombosAligned[index], ...combo };
-      return mockCombosAligned[index];
+      return await combosService.update(id, combo);
     } catch (error) {
       return handleApiError(error);
     }
@@ -398,9 +401,31 @@ export const combosAPI = {
 
   delete: async (id: number): Promise<void> => {
     try {
-      const index = mockCombosAligned.findIndex(c => c.id === id);
-      if (index === -1) throw new Error('Combo no encontrado');
-      mockCombosAligned.splice(index, 1);
+      await combosService.delete(id);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  getActive: async (): Promise<Combo[]> => {
+    try {
+      return await combosService.getActive();
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  activate: async (id: number): Promise<Combo> => {
+    try {
+      return await combosService.activate(id);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  deactivate: async (id: number): Promise<Combo> => {
+    try {
+      return await combosService.deactivate(id);
     } catch (error) {
       return handleApiError(error);
     }
@@ -419,7 +444,7 @@ export const cashRegisterAPI = {
     }
   },
 
-  getHistory: async (filters?: any): Promise<CashRegister[]> => {
+  getHistory: async (filters?: FilterParams): Promise<CashRegister[]> => {
     try {
       return await cashRegisterService.getHistory(filters);
     } catch (error) {
@@ -435,7 +460,7 @@ export const cashRegisterAPI = {
     }
   },
 
-  open: async (openData: any): Promise<CashRegister> => {
+  open: async (openData: CashRegisterOpenRequest): Promise<CashRegister> => {
     try {
       return await cashRegisterService.open(openData);
     } catch (error) {
@@ -443,7 +468,7 @@ export const cashRegisterAPI = {
     }
   },
 
-  close: async (id: number, closeData: any): Promise<CashRegister> => {
+  close: async (id: number, closeData: CashRegisterCloseRequest): Promise<CashRegister> => {
     try {
       return await cashRegisterService.close(id, closeData);
     } catch (error) {
@@ -451,7 +476,7 @@ export const cashRegisterAPI = {
     }
   },
 
-  getSummary: async (id: number): Promise<any> => {
+  getSummary: async (id: number): Promise<CashRegisterStatistics> => {
     try {
       return await cashRegisterService.getSummary(id);
     } catch (error) {
@@ -459,7 +484,7 @@ export const cashRegisterAPI = {
     }
   },
 
-  getStatistics: async (filters?: any): Promise<any> => {
+  getStatistics: async (filters?: FilterParams): Promise<CashRegisterStatistics> => {
     try {
       return await cashRegisterService.getStatistics(filters);
     } catch (error) {
@@ -472,7 +497,7 @@ export const cashRegisterAPI = {
 // GASTOS - Redirigir al nuevo servicio especializado
 // ============================================================================
 export const expensesAPI = {
-  getAll: async (params?: any): Promise<Expense[]> => {
+  getAll: async (params?: FilterParams): Promise<Expense[]> => {
     try {
       return await expensesService.getAll(params);
     } catch (error) {
@@ -521,7 +546,7 @@ export const expensesAPI = {
     }
   },
 
-  getByDateRange: async (filters: any): Promise<Expense[]> => {
+  getByDateRange: async (filters: DateRangeFilterParams): Promise<Expense[]> => {
     try {
       return await expensesService.getByDateRange(filters);
     } catch (error) {
@@ -553,7 +578,7 @@ export const expensesAPI = {
     }
   },
 
-  getStatistics: async (filters?: any): Promise<any> => {
+  getStatistics: async (filters?: FilterParams): Promise<GenericStatistics> => {
     try {
       return await expensesService.getStatistics(filters);
     } catch (error) {
@@ -566,7 +591,7 @@ export const expensesAPI = {
 // INVENTARIO - Redirigir al nuevo servicio especializado
 // ============================================================================
 export const inventoryAPI = {
-  getMovements: async (params?: any): Promise<InventoryMovement[]> => {
+  getMovements: async (params?: FilterParams): Promise<InventoryMovement[]> => {
     try {
       return await inventoryService.getMovements(params);
     } catch (error) {
@@ -599,7 +624,7 @@ export const inventoryAPI = {
     }
   },
 
-  getByDateRange: async (filters: any): Promise<InventoryMovement[]> => {
+  getByDateRange: async (filters: DateRangeFilterParams): Promise<InventoryMovement[]> => {
     try {
       return await inventoryService.getByDateRange(filters);
     } catch (error) {
@@ -623,7 +648,7 @@ export const inventoryAPI = {
     }
   },
 
-  createEntry: async (entryData: any): Promise<InventoryMovement> => {
+  createEntry: async (entryData: InventoryMovementCreateRequest): Promise<InventoryMovement> => {
     try {
       return await inventoryService.createEntry(entryData);
     } catch (error) {
@@ -631,7 +656,7 @@ export const inventoryAPI = {
     }
   },
 
-  createAdjustment: async (adjustmentData: any): Promise<InventoryMovement> => {
+  createAdjustment: async (adjustmentData: InventoryMovementCreateRequest): Promise<InventoryMovement> => {
     try {
       return await inventoryService.createAdjustment(adjustmentData);
     } catch (error) {
@@ -639,15 +664,17 @@ export const inventoryAPI = {
     }
   },
 
-  createSaleMovement: async (saleData: any): Promise<InventoryMovement> => {
+  createSaleMovement: async (saleData: SaleCreateRequest): Promise<InventoryMovement> => {
     try {
-      return await inventoryService.createSaleMovement(saleData);
+      // El servicio de inventario espera InventoryMovementCreateRequest
+      // Aquí hacemos la conversión si es necesaria
+      return await inventoryService.createSaleMovement(saleData as unknown as InventoryMovementCreateRequest);
     } catch (error) {
       return handleApiError(error);
     }
   },
 
-  getStatistics: async (filters?: any): Promise<any> => {
+  getStatistics: async (filters?: FilterParams): Promise<GenericStatistics> => {
     try {
       return await inventoryService.getStatistics(filters);
     } catch (error) {

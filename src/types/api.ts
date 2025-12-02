@@ -1,5 +1,5 @@
 // Tipos para las respuestas de la API del backend
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   status: boolean;
   message: string;
   data: T;
@@ -77,11 +77,21 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
-// Tipos para filtros de fecha
-export interface DateRangeFilter {
-  from: string; // YYYY-MM-DD
-  to: string;   // YYYY-MM-DD
+// Tipos para filtros genéricos
+export interface FilterParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  [key: string]: unknown;
 }
+
+export interface DateRangeFilterParams extends FilterParams {
+  startDate?: string;
+  endDate?: string;
+}
+
+// Tipos para respuestas genéricas
+export type GenericStatistics = Record<string, unknown>;
 
 // Tipos específicos para productos según el backend
 export interface ProductCreateRequest {
@@ -100,7 +110,8 @@ export interface ProductCreateRequest {
   usaInventario?: boolean;
 }
 
-export interface ProductUpdateRequest extends Partial<ProductCreateRequest> {}
+// ProductUpdateRequest es simplemente un alias para Partial<ProductCreateRequest>
+export type ProductUpdateRequest = Partial<ProductCreateRequest>;
 
 export interface ProductStockUpdateRequest {
   cantidad: number;
@@ -120,7 +131,8 @@ export interface ClientCreateRequest {
   direccion?: string;
 }
 
-export interface ClientUpdateRequest extends Partial<ClientCreateRequest> {}
+// ClientUpdateRequest es simplemente un alias para Partial<ClientCreateRequest>
+export type ClientUpdateRequest = Partial<ClientCreateRequest>;
 
 // Tipos para ventas según el backend
 export interface SaleCreateRequest {
@@ -269,37 +281,8 @@ export interface PromotionCreateRequest {
   fechaInicio: string;
   fechaFin: string;
   productosId?: number[];
-  active: boolean;
-}
-
-// Tipos para Caja Registradora
-export interface CashRegisterOpenRequest {
-  cajero: string;
-  montoInicial: number;
-  observaciones?: string;
-}
-
-export interface CashRegisterCloseRequest {
-  montoFinal: number;
-  observaciones?: string;
-}
-
-// Tipos para Gastos
-export interface ExpenseCreateRequest {
-  descripcion: string;
-  monto: number;
-  categoria: string;
-  metodoPago: string;
-  cajero?: string;
-  observaciones?: string;
-}
-
-// Tipos para Movimientos de Inventario
-export interface InventoryMovementCreateRequest {
-  productoId: number;
-  productoNombre?: string;
-  tipo: 'ENTRADA' | 'SALIDA' | 'AJUSTE';
-  cantidad: number;
-  descripcion?: string;
-  cajero?: string;
+  clientesId?: number[];
+  montoMinimo?: number;
+  cantidadMaxima?: number;
+  active?: boolean;
 }

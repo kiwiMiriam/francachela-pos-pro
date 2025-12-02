@@ -96,7 +96,6 @@ export function mapVentaFromBackend(ventaBackend: VentaBackend): Sale {
     subTotal: parseFloat(ventaBackend.subTotal),
     descuento: parseFloat(ventaBackend.descuento),
     total: parseFloat(ventaBackend.total),
-    metodoPago: ventaBackend.metodoPago as any,
     comentario: ventaBackend.comentario,
     cajero: ventaBackend.cajero,
     estado: ventaBackend.estado,
@@ -106,7 +105,7 @@ export function mapVentaFromBackend(ventaBackend: VentaBackend): Sale {
     tipoCompra: ventaBackend.tipoCompra,
     montoRecibido: parseFloat(ventaBackend.montoRecibido),
     vuelto: parseFloat(ventaBackend.vuelto),
-    fechaCreacion: ventaBackend.fechaCreacion,
+    metodoPago: (ventaBackend.metodoPago || 'EFECTIVO') as 'EFECTIVO' | 'YAPE' | 'PLIN' | 'TARJETA',
     fechaActualizacion: ventaBackend.fechaActualizacion
   };
 }
@@ -123,7 +122,7 @@ export function mapProductoVentaFromBackend(productoVentaBackend: ProductoVentaB
 }
 
 // Mapeo de Venta: Frontend → Backend (para crear ventas)
-export function mapVentaToBackend(sale: Partial<Sale>): any {
+export function mapVentaToBackend(sale: Partial<Sale>): Record<string, unknown> {
   return {
     clienteId: sale.clienteId,
     listaProductos: sale.listaProductos?.map(item => ({
@@ -148,8 +147,8 @@ export function extractDataFromPaginatedResponse<T>(
 }
 
 // Función utilitaria para extraer metadatos de paginación
-export function extractPaginationMeta(
-  response: BackendPaginatedResponse<any>
+export function extractPaginationMeta<T>(
+  response: BackendPaginatedResponse<T>
 ): {
   total: number;
   page: number;
