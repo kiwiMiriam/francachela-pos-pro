@@ -7,9 +7,11 @@ import type { SaleItem, Product } from '@/types';
 /**
  * Calcula los puntos totales de una venta
  */
-export function calculateTotalPoints(items: SaleItem[]): number {
+export function calculateTotalPoints(items: any[]): number {
   return items.reduce((total, item) => {
-    return total + (item.pointsValue * item.quantity);
+    // Usar puntosValor (del POS) o pointsValue (del backend)
+    const pointsPerUnit = item.puntosValor !== undefined ? item.puntosValor : (item.pointsValue || 0);
+    return total + (pointsPerUnit * (item.cantidad || item.quantity || 0));
   }, 0);
 }
 

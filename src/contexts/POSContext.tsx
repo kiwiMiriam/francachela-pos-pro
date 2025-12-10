@@ -99,6 +99,11 @@ export function POSProvider({ children }: { children: React.ReactNode }) {
           }
           
           // Agregar nuevo item
+          // Calcular puntos: si hay valorPuntos del producto, usarlo; sino usar precio * 10
+          const puntosValor = (product.valorPuntos || 0) > 0 
+            ? product.valorPuntos 
+            : Math.floor(precio * 10);
+          
           const newItem: POSItem = {
             id: product.id,
             productId: product.id,
@@ -106,7 +111,7 @@ export function POSProvider({ children }: { children: React.ReactNode }) {
             cantidad: 1,
             precio,
             subtotal: precio,
-            puntosValor: product.valorPuntos || 0,
+            puntosValor,
             isWholesale,
           };
           

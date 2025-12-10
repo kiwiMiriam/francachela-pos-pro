@@ -26,6 +26,7 @@ export default function POS() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>(PAYMENT_METHODS.EFECTIVO);
   const [notes, setNotes] = useState('');
   const [discount, setDiscount] = useState(0);
+  const [montoRecibido, setMontoRecibido] = useState<number | undefined>();
   
   const PRODUCTS_PER_PAGE = 9;
 
@@ -63,8 +64,15 @@ export default function POS() {
     }
   }, [productsError]);
 
+  // Resetear montoRecibido cuando se cierra el diálogo de pago
+  useEffect(() => {
+    if (!isPaymentOpen) {
+      setMontoRecibido(undefined);
+    }
+  }, [isPaymentOpen]);
+
   // Usar productos buscados si hay término de búsqueda, sino usar todos los productos
-  // Asegurar que siempre sean arrays para evitar errores de .slice()
+  // El hook useProductSearch solo busca si hay al menos 2 caracteres
   const displayProducts = searchTerm.length >= 2 
     ? (searchedProducts || []) 
     : (products || []);
@@ -157,7 +165,7 @@ export default function POS() {
     // Guardar referencia al cliente antes de completar la venta
     const currentClientId = activeTicket.clientId;
     
-    await completeSale(selectedPaymentMethod, 'Sistema');
+    await completeSale(selectedPaymentMethod, 'Sistema', montoRecibido);
     
     // Obtener el cliente actualizado para obtener los puntos actualizados
     const client = clients.find(c => c.id === currentClientId);
@@ -175,6 +183,7 @@ export default function POS() {
     setIsPaymentOpen(false);
     setNotes('');
     setDiscount(0);
+    setMontoRecibido(undefined);
     setSelectedPaymentMethod(PAYMENT_METHODS.EFECTIVO);
   };
 
@@ -469,6 +478,47 @@ export default function POS() {
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+
+                    {/* Sección de Cálculo de Vuelto */}
+                    <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
+                      <div className="font-medium text-sm">Cálculo de Vuelto</div>
+                      <div className="space-y-2">
+                        <div>
+                          <Label htmlFor="montoRecibido" className="text-xs">Monto Recibido (opcional)</Label>
+                          <Input
+                            id="montoRecibido"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={montoRecibido === undefined ? '' : montoRecibido}
+                            onChange={(e) => setMontoRecibido(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                            placeholder={`Total: S/ ${total.toFixed(2)}`}
+                            className="text-sm"
+                          />
+                        </div>
+                        {montoRecibido !== undefined && montoRecibido >= 0 && (
+                          <div className="space-y-2">
+                            {montoRecibido < total && (
+                              <div className="text-sm text-destructive font-medium">
+                                Monto insuficiente: Falta S/ {(total - montoRecibido).toFixed(2)}
+                              </div>
+                            )}
+                            {montoRecibido >= total && (
+                              <>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">Monto recibido:</span>
+                                  <span className="font-medium">S/ {montoRecibido.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm border-t pt-2">
+                                  <span className="font-medium">Vuelto:</span>
+                                  <span className="text-lg font-bold text-primary">S/ {(montoRecibido - total).toFixed(2)}</span>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {activeTicket?.clientName && (

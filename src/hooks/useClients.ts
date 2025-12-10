@@ -67,11 +67,13 @@ export const useClientByDni = (dni: string) => {
 
 // Hook de búsqueda usando el hook principal con filtros
 export const useClientSearch = (query: string) => {
-  return useClients({ 
+  // Solo hacer búsqueda si hay query de al menos 2 caracteres
+  const shouldSearch = query && query.length >= 2;
+  return useClients(shouldSearch ? { 
     search: query,
     // Usar límite pequeño para búsquedas rápidas
     limit: 20 
-  });
+  } : undefined);
 };
 
 // getStatistics no existe en el service refactorizado

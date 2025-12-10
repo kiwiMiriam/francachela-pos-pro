@@ -60,10 +60,12 @@ export const useLowStockProducts = () => {
 };
 
 export const useProductSearch = (query: string) => {
-  return useProducts({ 
+  // Solo hacer búsqueda si hay query de al menos 2 caracteres
+  const shouldSearch = query && query.length >= 2;
+  return useProducts(shouldSearch ? { 
     search: query,
     limit: 20 
-  });
+  } : undefined);
 };
 
 // Hooks para mutaciones

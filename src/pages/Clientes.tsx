@@ -158,7 +158,7 @@ export default function Clientes() {
         nombres: formData.firstName,
         apellidos: formData.lastName,
         dni: formData.dni,
-        telefono: `+51${formData.phone}`,
+        telefono: `51${formData.phone}`,
         direccion: formData.address,
         fechaNacimiento: formData.birthday,
         //puntosAcumulados: formData.points,
