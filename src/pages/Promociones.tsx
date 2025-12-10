@@ -10,10 +10,38 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Gift, Calendar, Plus, Pencil, Trash2, Package } from "lucide-react";
+import { Gift, Calendar, Plus, Pencil, Trash2, Package, X } from "lucide-react";
 import { toast } from "sonner";
-import { promotionsAPI, combosAPI, productsAPI } from "@/services/api";
+import { promotionsService } from "@/services/promotionsService";
+import { combosService } from "@/services/combosService";
+import { productsService } from "@/services/productsService";
 import type { Promotion, Combo, Product } from "@/types";
+
+// Tipos para el backend
+interface BackendPromotion {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  tipo: 'PORCENTAJE' | 'MONTO';
+  descuento: number;
+  fechaInicio: string;
+  fechaFin: string;
+  activo: boolean;
+  productosAplicables?: number[];
+  montoMinimo?: number;
+  cantidadMaximaUsos?: number;
+}
+
+interface BackendCombo {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  productos: { productoId: number; cantidad: number }[];
+  precioOriginal: number;
+  precioCombo: number;
+  puntosExtra?: number;
+  active: boolean;
+}
 
 export default function Promociones() {
   const [promociones, setPromociones] = useState<Promotion[]>([]);
@@ -28,23 +56,28 @@ export default function Promociones() {
   const [currentComboPage, setCurrentComboPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
   
+  // Form data alineado con el backend
   const [promoFormData, setPromoFormData] = useState({
-    name: '',
-    description: '',
-    type: 'percentage' as Promotion['type'],
-    value: 0,
-    startDate: '',
-    endDate: '',
-    active: true,
+    nombre: '',
+    descripcion: '',
+    tipo: 'PORCENTAJE' as 'PORCENTAJE' | 'MONTO',
+    descuento: 0,
+    fechaInicio: '',
+    fechaFin: '',
+    activo: true,
+    productosAplicables: [] as number[],
+    montoMinimo: 0,
+    cantidadMaximaUsos: 0,
   });
 
   const [comboFormData, setComboFormData] = useState({
-    name: '',
-    description: '',
-    originalPrice: 0,
-    comboPrice: 0,
+    nombre: '',
+    descripcion: '',
+    precioOriginal: 0,
+    precioCombo: 0,
+    puntosExtra: 0,
     active: true,
-    products: [] as { productId: number; quantity: number }[],
+    productos: [] as { productId: number; quantity: number }[],
   });
 
   useEffect(() => {
@@ -54,13 +87,13 @@ export default function Promociones() {
   const loadData = async () => {
     try {
       const [promosData, combosData, productsData] = await Promise.all([
-        promotionsAPI.getAll(),
-        combosAPI.getAll(),
-        productsAPI.getAll(),
+        promotionsService.getAll(),
+        combosService.getAll(),
+        productsService.getAll(),
       ]);
-      setPromociones(promosData);
-      setCombos(combosData);
-      setProductos(productsData);
+      setPromociones(promosData || []);
+      setCombos(combosData || []);
+      setProductos(productsData || []);
     } catch (error) {
       toast.error('Error al cargar datos');
     } finally {
@@ -68,15 +101,73 @@ export default function Promociones() {
     }
   };
 
+  // Mapear frontend a backend para promociones
+  const mapPromoToBackend = (formData: typeof promoFormData): Omit<BackendPromotion, 'id'> => ({
+    nombre: formData.nombre,
+    descripcion: formData.descripcion,
+    tipo: formData.tipo,
+    descuento: formData.descuento,
+    fechaInicio: formData.fechaInicio,
+    fechaFin: formData.fechaFin,
+    activo: formData.activo,
+    productosAplicables: formData.productosAplicables,
+    montoMinimo: formData.montoMinimo || undefined,
+    cantidadMaximaUsos: formData.cantidadMaximaUsos || undefined,
+  });
+
+  // Mapear backend a frontend para promociones
+  const mapPromoFromBackend = (promo: BackendPromotion): Promotion => ({
+    id: promo.id,
+    name: promo.nombre,
+    description: promo.descripcion,
+    type: promo.tipo === 'PORCENTAJE' ? 'percentage' : 'fixed',
+    value: Number(promo.descuento),
+    startDate: promo.fechaInicio,
+    endDate: promo.fechaFin,
+    active: promo.activo,
+    productIds: promo.productosAplicables || [],
+  });
+
+  // Mapear frontend a backend para combos
+  const mapComboToBackend = (formData: typeof comboFormData): Omit<BackendCombo, 'id'> => ({
+    nombre: formData.nombre,
+    descripcion: formData.descripcion,
+    productos: formData.productos.map(p => ({ productoId: p.productId, cantidad: p.quantity })),
+    precioOriginal: formData.precioOriginal,
+    precioCombo: formData.precioCombo,
+    puntosExtra: formData.puntosExtra || undefined,
+    active: formData.active,
+  });
+
   const handlePromoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
+      const backendData = mapPromoToBackend(promoFormData);
+      
       if (editingPromo) {
-        await promotionsAPI.update(editingPromo.id, promoFormData);
+        await promotionsService.update(editingPromo.id, {
+          name: backendData.nombre,
+          description: backendData.descripcion,
+          type: backendData.tipo === 'PORCENTAJE' ? 'percentage' : 'fixed',
+          value: backendData.descuento,
+          startDate: backendData.fechaInicio,
+          endDate: backendData.fechaFin,
+          active: backendData.activo,
+          productIds: backendData.productosAplicables,
+        });
         toast.success('Promoción actualizada correctamente');
       } else {
-        await promotionsAPI.create(promoFormData as any);
+        await promotionsService.create({
+          name: backendData.nombre,
+          description: backendData.descripcion,
+          type: backendData.tipo === 'PORCENTAJE' ? 'percentage' : 'fixed',
+          value: backendData.descuento,
+          startDate: backendData.fechaInicio,
+          endDate: backendData.fechaFin,
+          active: backendData.activo,
+          productIds: backendData.productosAplicables,
+        });
         toast.success('Promoción creada correctamente');
       }
       
@@ -92,11 +183,27 @@ export default function Promociones() {
     e.preventDefault();
     
     try {
+      const backendData = mapComboToBackend(comboFormData);
+      
       if (editingCombo) {
-        await combosAPI.update(editingCombo.id, comboFormData);
+        await combosService.update(editingCombo.id, {
+          name: backendData.nombre,
+          description: backendData.descripcion,
+          products: backendData.productos,
+          originalPrice: backendData.precioOriginal,
+          comboPrice: backendData.precioCombo,
+          active: backendData.active,
+        });
         toast.success('Combo actualizado correctamente');
       } else {
-        await combosAPI.create(comboFormData as any);
+        await combosService.create({
+          name: backendData.nombre,
+          description: backendData.descripcion,
+          products: backendData.productos,
+          originalPrice: backendData.precioOriginal,
+          comboPrice: backendData.precioCombo,
+          active: backendData.active,
+        });
         toast.success('Combo creado correctamente');
       }
       
@@ -112,7 +219,7 @@ export default function Promociones() {
     if (!confirm('¿Estás seguro de eliminar esta promoción?')) return;
     
     try {
-      await promotionsAPI.delete(id);
+      await promotionsService.delete(id);
       toast.success('Promoción eliminada correctamente');
       loadData();
     } catch (error) {
@@ -124,7 +231,7 @@ export default function Promociones() {
     if (!confirm('¿Estás seguro de eliminar este combo?')) return;
     
     try {
-      await combosAPI.delete(id);
+      await combosService.delete(id);
       toast.success('Combo eliminado correctamente');
       loadData();
     } catch (error) {
@@ -135,13 +242,16 @@ export default function Promociones() {
   const openEditPromoDialog = (promo: Promotion) => {
     setEditingPromo(promo);
     setPromoFormData({
-      name: promo.name,
-      description: promo.description,
-      type: promo.type,
-      value: promo.value,
-      startDate: promo.startDate,
-      endDate: promo.endDate,
-      active: promo.active,
+      nombre: promo.name,
+      descripcion: promo.description,
+      tipo: promo.type === 'percentage' ? 'PORCENTAJE' : 'MONTO',
+      descuento: promo.value,
+      fechaInicio: promo.startDate,
+      fechaFin: promo.endDate,
+      activo: promo.active,
+      productosAplicables: promo.productIds || [],
+      montoMinimo: 0,
+      cantidadMaximaUsos: 0,
     });
     setIsPromoDialogOpen(true);
   };
@@ -149,12 +259,13 @@ export default function Promociones() {
   const openEditComboDialog = (combo: Combo) => {
     setEditingCombo(combo);
     setComboFormData({
-      name: combo.name,
-      description: combo.description,
-      originalPrice: combo.originalPrice,
-      comboPrice: combo.comboPrice,
+      nombre: combo.name,
+      descripcion: combo.description,
+      precioOriginal: combo.originalPrice,
+      precioCombo: combo.comboPrice,
+      puntosExtra: 0,
       active: combo.active,
-      products: combo.products,
+      productos: combo.products,
     });
     setIsComboDialogOpen(true);
   };
@@ -162,26 +273,71 @@ export default function Promociones() {
   const resetPromoForm = () => {
     setEditingPromo(null);
     setPromoFormData({
-      name: '',
-      description: '',
-      type: 'percentage',
-      value: 0,
-      startDate: '',
-      endDate: '',
-      active: true,
+      nombre: '',
+      descripcion: '',
+      tipo: 'PORCENTAJE',
+      descuento: 0,
+      fechaInicio: '',
+      fechaFin: '',
+      activo: true,
+      productosAplicables: [],
+      montoMinimo: 0,
+      cantidadMaximaUsos: 0,
     });
   };
 
   const resetComboForm = () => {
     setEditingCombo(null);
     setComboFormData({
-      name: '',
-      description: '',
-      originalPrice: 0,
-      comboPrice: 0,
+      nombre: '',
+      descripcion: '',
+      precioOriginal: 0,
+      precioCombo: 0,
+      puntosExtra: 0,
       active: true,
-      products: [],
+      productos: [],
     });
+  };
+
+  const addProductToCombo = (productId: number) => {
+    if (comboFormData.productos.find(p => p.productId === productId)) {
+      toast.error('El producto ya está en el combo');
+      return;
+    }
+    setComboFormData({
+      ...comboFormData,
+      productos: [...comboFormData.productos, { productId, quantity: 1 }],
+    });
+  };
+
+  const removeProductFromCombo = (productId: number) => {
+    setComboFormData({
+      ...comboFormData,
+      productos: comboFormData.productos.filter(p => p.productId !== productId),
+    });
+  };
+
+  const updateProductQuantity = (productId: number, quantity: number) => {
+    setComboFormData({
+      ...comboFormData,
+      productos: comboFormData.productos.map(p => 
+        p.productId === productId ? { ...p, quantity } : p
+      ),
+    });
+  };
+
+  const toggleProductInPromo = (productId: number) => {
+    if (promoFormData.productosAplicables.includes(productId)) {
+      setPromoFormData({
+        ...promoFormData,
+        productosAplicables: promoFormData.productosAplicables.filter(id => id !== productId),
+      });
+    } else {
+      setPromoFormData({
+        ...promoFormData,
+        productosAplicables: [...promoFormData.productosAplicables, productId],
+      });
+    }
   };
 
   if (isLoading) {
@@ -213,17 +369,21 @@ export default function Promociones() {
                   Nueva Promoción
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{editingPromo ? 'Editar Promoción' : 'Nueva Promoción'}</DialogTitle>
+                  <DialogDescription>
+                    Configura los detalles de la promoción
+                  </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handlePromoSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="promoName">Nombre *</Label>
+                    <Label htmlFor="promoNombre">Nombre *</Label>
                     <Input
-                      id="promoName"
-                      value={promoFormData.name}
-                      onChange={(e) => setPromoFormData({ ...promoFormData, name: e.target.value })}
+                      id="promoNombre"
+                      value={promoFormData.nombre}
+                      onChange={(e) => setPromoFormData({ ...promoFormData, nombre: e.target.value })}
+                      placeholder="Descuento de Verano"
                       required
                     />
                   </div>
@@ -231,64 +391,114 @@ export default function Promociones() {
                     <Label htmlFor="promoDesc">Descripción *</Label>
                     <Textarea
                       id="promoDesc"
-                      value={promoFormData.description}
-                      onChange={(e) => setPromoFormData({ ...promoFormData, description: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Tipo</Label>
-                    <Select value={promoFormData.type} onValueChange={(value: any) => setPromoFormData({ ...promoFormData, type: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="percentage">Porcentaje</SelectItem>
-                        <SelectItem value="fixed">Monto Fijo</SelectItem>
-                        <SelectItem value="2x1">2x1</SelectItem>
-                        <SelectItem value="3x2">3x2</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="promoValue">Valor</Label>
-                    <Input
-                      id="promoValue"
-                      type="number"
-                      step="0.01"
-                      value={promoFormData.value}
-                      onChange={(e) => setPromoFormData({ ...promoFormData, value: parseFloat(e.target.value) })}
+                      value={promoFormData.descripcion}
+                      onChange={(e) => setPromoFormData({ ...promoFormData, descripcion: e.target.value })}
+                      placeholder="20% de descuento en bebidas"
                       required
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="startDate">Inicio</Label>
-                      <Input
-                        id="startDate"
-                        type="date"
-                        value={promoFormData.startDate}
-                        onChange={(e) => setPromoFormData({ ...promoFormData, startDate: e.target.value })}
-                        required
-                      />
+                      <Label>Tipo</Label>
+                      <Select value={promoFormData.tipo} onValueChange={(value: 'PORCENTAJE' | 'MONTO') => setPromoFormData({ ...promoFormData, tipo: value })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="PORCENTAJE">Porcentaje</SelectItem>
+                          <SelectItem value="MONTO">Monto Fijo</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="endDate">Fin</Label>
+                      <Label htmlFor="promoDescuento">
+                        {promoFormData.tipo === 'PORCENTAJE' ? 'Descuento %' : 'Descuento S/'}
+                      </Label>
                       <Input
-                        id="endDate"
-                        type="date"
-                        value={promoFormData.endDate}
-                        onChange={(e) => setPromoFormData({ ...promoFormData, endDate: e.target.value })}
+                        id="promoDescuento"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={promoFormData.descuento || ''}
+                        onChange={(e) => setPromoFormData({ ...promoFormData, descuento: parseFloat(e.target.value) || 0 })}
                         required
                       />
                     </div>
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="fechaInicio">Fecha Inicio</Label>
+                      <Input
+                        id="fechaInicio"
+                        type="date"
+                        value={promoFormData.fechaInicio}
+                        onChange={(e) => setPromoFormData({ ...promoFormData, fechaInicio: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="fechaFin">Fecha Fin</Label>
+                      <Input
+                        id="fechaFin"
+                        type="date"
+                        value={promoFormData.fechaFin}
+                        onChange={(e) => setPromoFormData({ ...promoFormData, fechaFin: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="montoMinimo">Monto Mínimo (opcional)</Label>
+                      <Input
+                        id="montoMinimo"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={promoFormData.montoMinimo || ''}
+                        onChange={(e) => setPromoFormData({ ...promoFormData, montoMinimo: parseFloat(e.target.value) || 0 })}
+                        placeholder="50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cantidadMaxima">Usos Máximos (opcional)</Label>
+                      <Input
+                        id="cantidadMaxima"
+                        type="number"
+                        min="0"
+                        value={promoFormData.cantidadMaximaUsos || ''}
+                        onChange={(e) => setPromoFormData({ ...promoFormData, cantidadMaximaUsos: parseInt(e.target.value) || 0 })}
+                        placeholder="100"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Productos Aplicables</Label>
+                    <div className="border rounded-md p-2 max-h-40 overflow-y-auto space-y-1">
+                      {productos.map((product) => (
+                        <div key={product.id} className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={promoFormData.productosAplicables.includes(product.id)}
+                            onChange={() => toggleProductInPromo(product.id)}
+                            className="rounded"
+                          />
+                          <span className="text-sm">{product.productoDescripcion}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {promoFormData.productosAplicables.length === 0 
+                        ? 'Aplica a todos los productos' 
+                        : `${promoFormData.productosAplicables.length} productos seleccionados`}
+                    </p>
+                  </div>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="promoActive">Activa</Label>
+                    <Label htmlFor="promoActivo">Activa</Label>
                     <Switch
-                      id="promoActive"
-                      checked={promoFormData.active}
-                      onCheckedChange={(checked) => setPromoFormData({ ...promoFormData, active: checked })}
+                      id="promoActivo"
+                      checked={promoFormData.activo}
+                      onCheckedChange={(checked) => setPromoFormData({ ...promoFormData, activo: checked })}
                     />
                   </div>
                   <DialogFooter>
@@ -308,7 +518,7 @@ export default function Promociones() {
               <Card key={promo.id} className="hover:shadow-lg transition-all">
                 <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
                   <CardTitle className="flex items-center gap-3 text-lg">
-                    <Gift className="h-5 w-5 text-success" />
+                    <Gift className="h-5 w-5 text-primary" />
                     {promo.name}
                   </CardTitle>
                   <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -330,8 +540,8 @@ export default function Promociones() {
                       <Calendar className="h-4 w-4" />
                       {new Date(promo.startDate).toLocaleDateString()} - {new Date(promo.endDate).toLocaleDateString()}
                     </div>
-                    <Badge variant="outline">{(promo.type || 'percentage').toUpperCase()}</Badge>
-                    <span className="font-semibold">{promo.value}{(promo.type || 'percentage') === 'percentage' ? '%' : ' soles'}</span>
+                    <Badge variant="outline">{promo.type === 'percentage' ? 'PORCENTAJE' : 'MONTO'}</Badge>
+                    <span className="font-semibold">{promo.value}{promo.type === 'percentage' ? '%' : ' soles'}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -386,17 +596,21 @@ export default function Promociones() {
                   Nuevo Combo
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{editingCombo ? 'Editar Combo' : 'Nuevo Combo'}</DialogTitle>
+                  <DialogDescription>
+                    Configura los productos y precios del combo
+                  </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleComboSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="comboName">Nombre *</Label>
+                    <Label htmlFor="comboNombre">Nombre *</Label>
                     <Input
-                      id="comboName"
-                      value={comboFormData.name}
-                      onChange={(e) => setComboFormData({ ...comboFormData, name: e.target.value })}
+                      id="comboNombre"
+                      value={comboFormData.nombre}
+                      onChange={(e) => setComboFormData({ ...comboFormData, nombre: e.target.value })}
+                      placeholder="Combo Familiar"
                       required
                     />
                   </div>
@@ -404,34 +618,94 @@ export default function Promociones() {
                     <Label htmlFor="comboDesc">Descripción *</Label>
                     <Textarea
                       id="comboDesc"
-                      value={comboFormData.description}
-                      onChange={(e) => setComboFormData({ ...comboFormData, description: e.target.value })}
+                      value={comboFormData.descripcion}
+                      onChange={(e) => setComboFormData({ ...comboFormData, descripcion: e.target.value })}
+                      placeholder="2 hamburguesas + 2 papas + 2 gaseosas"
                       required
                     />
                   </div>
+                  
+                  {/* Productos del combo */}
+                  <div className="space-y-2">
+                    <Label>Productos del Combo *</Label>
+                    <Select onValueChange={(value) => addProductToCombo(parseInt(value))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Agregar producto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {productos.map((product) => (
+                          <SelectItem key={product.id} value={product.id.toString()}>
+                            {product.productoDescripcion} - S/ {product.precio}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    {comboFormData.productos.length > 0 && (
+                      <div className="space-y-2 mt-2">
+                        {comboFormData.productos.map((item) => {
+                          const product = productos.find(p => p.id === item.productId);
+                          return (
+                            <div key={item.productId} className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                              <span className="flex-1 text-sm">{product?.productoDescripcion}</span>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(e) => updateProductQuantity(item.productId, parseInt(e.target.value) || 1)}
+                                className="w-20"
+                              />
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => removeProductFromCombo(item.productId)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="originalPrice">Precio Original S/</Label>
+                      <Label htmlFor="precioOriginal">Precio Original S/</Label>
                       <Input
-                        id="originalPrice"
+                        id="precioOriginal"
                         type="number"
                         step="0.01"
-                        value={comboFormData.originalPrice}
-                        onChange={(e) => setComboFormData({ ...comboFormData, originalPrice: parseFloat(e.target.value) })}
+                        min="0"
+                        value={comboFormData.precioOriginal || ''}
+                        onChange={(e) => setComboFormData({ ...comboFormData, precioOriginal: parseFloat(e.target.value) || 0 })}
                         required
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="comboPrice">Precio Combo S/</Label>
+                      <Label htmlFor="precioCombo">Precio Combo S/</Label>
                       <Input
-                        id="comboPrice"
+                        id="precioCombo"
                         type="number"
                         step="0.01"
-                        value={comboFormData.comboPrice}
-                        onChange={(e) => setComboFormData({ ...comboFormData, comboPrice: parseFloat(e.target.value) })}
+                        min="0"
+                        value={comboFormData.precioCombo || ''}
+                        onChange={(e) => setComboFormData({ ...comboFormData, precioCombo: parseFloat(e.target.value) || 0 })}
                         required
                       />
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="puntosExtra">Puntos Extra (opcional)</Label>
+                    <Input
+                      id="puntosExtra"
+                      type="number"
+                      min="0"
+                      value={comboFormData.puntosExtra || ''}
+                      onChange={(e) => setComboFormData({ ...comboFormData, puntosExtra: parseInt(e.target.value) || 0 })}
+                      placeholder="10"
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <Label htmlFor="comboActive">Activo</Label>
@@ -442,7 +716,7 @@ export default function Promociones() {
                     />
                   </div>
                   <DialogFooter>
-                    <Button type="submit" className="w-full">
+                    <Button type="submit" className="w-full" disabled={comboFormData.productos.length === 0}>
                       {editingCombo ? 'Actualizar' : 'Crear Combo'}
                     </Button>
                   </DialogFooter>
@@ -452,7 +726,7 @@ export default function Promociones() {
           </div>
 
           <div className="grid gap-4">
-            {combos
+            {(combos || [])
               .slice((currentComboPage - 1) * ITEMS_PER_PAGE, currentComboPage * ITEMS_PER_PAGE)
               .map((combo) => (
               <Card key={combo.id} className="hover:shadow-lg transition-all">
@@ -475,40 +749,16 @@ export default function Promociones() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground mb-3">{combo.description}</p>
-                  
-                  {/* Mostrar productos incluidos en el combo */}
-                  {combo.products && combo.products.length > 0 && (
-                    <div className="mb-4 p-3 bg-muted/50 rounded-lg">
-                      <p className="text-sm font-semibold mb-2">Productos incluidos:</p>
-                      <div className="space-y-1">
-                        {combo.products.map((item: any, index: number) => {
-                          const product = productos.find(p => p.id === item.productId);
-                          return (
-                            <div key={index} className="flex items-center gap-2 text-sm">
-                              <Package className="h-3 w-3 text-muted-foreground" />
-                              <span>
-                                {product?.name || `Producto #${item.productId}`} x {item.quantity}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
                   <div className="flex flex-wrap items-center gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Precio Original</p>
-                      <p className="font-semibold line-through">S/ {combo.originalPrice.toFixed(2)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Precio Combo</p>
-                      <p className="text-xl font-bold text-primary">S/ {combo.comboPrice.toFixed(2)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Ahorro</p>
-                      <p className="font-semibold text-success">S/ {(combo.originalPrice - combo.comboPrice).toFixed(2)}</p>
-                    </div>
+                    <span className="text-sm line-through text-muted-foreground">
+                      S/ {combo.originalPrice.toFixed(2)}
+                    </span>
+                    <span className="text-lg font-bold text-primary">
+                      S/ {combo.comboPrice.toFixed(2)}
+                    </span>
+                    <Badge variant="outline">
+                      Ahorro: S/ {(combo.originalPrice - combo.comboPrice).toFixed(2)}
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>

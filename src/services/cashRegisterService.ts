@@ -25,7 +25,7 @@ export const cashRegisterService = {
       return await httpClient.get<CashRegister>(API_ENDPOINTS.CASH_REGISTER.CURRENT);
     } catch (error) {
       console.error('Error getting current cash register:', error);
-      return null; // No lanzar error si no hay caja abierta
+      return null;
     }
   },
 
@@ -39,7 +39,7 @@ export const cashRegisterService = {
         
         let registers = [...mockCashRegistersAligned];
         
-        if (filters) {
+        if (filters?.startDate && filters?.endDate) {
           const fromDate = new Date(filters.startDate);
           const toDate = new Date(filters.endDate);
           
@@ -96,7 +96,6 @@ export const cashRegisterService = {
       if (API_CONFIG.USE_MOCKS) {
         await simulateDelay();
         
-        // Verificar que no haya una caja abierta
         const existingOpen = mockCashRegistersAligned.find(cr => cr.status === 'open');
         if (existingOpen) {
           throw new Error('Ya hay una caja registradora abierta');
@@ -104,7 +103,7 @@ export const cashRegisterService = {
         
         const newRegister: CashRegister = {
           id: Math.max(...mockCashRegistersAligned.map(cr => cr.id)) + 1,
-          cashier: openData.cajero,
+          cashier: openData.cajero || 'Sistema',
           openedAt: new Date().toISOString(),
           initialCash: openData.montoInicial,
           totalSales: 0,
@@ -170,7 +169,7 @@ export const cashRegisterService = {
   /**
    * Obtener resumen de caja registradora
    */
-  getSummary: async (id: number): Promise<any> => {
+  getSummary: async (id: number): Promise<Record<string, unknown>> => {
     try {
       if (API_CONFIG.USE_MOCKS) {
         await simulateDelay();
@@ -180,7 +179,6 @@ export const cashRegisterService = {
           throw new Error('Caja registradora no encontrada');
         }
         
-        // Mock de resumen detallado
         return {
           cajaId: register.id,
           cajero: register.cashier,
@@ -193,12 +191,12 @@ export const cashRegisterService = {
           diferencia: register.finalCash ? 
             (register.finalCash - register.initialCash - register.totalSales + register.totalExpenses) : 0,
           desglosePagos: register.paymentBreakdown,
-          ventasCount: 25, // Mock
-          gastosCount: 3,  // Mock
+          ventasCount: 25,
+          gastosCount: 3,
         };
       }
       
-      return await httpClient.get<any>(API_ENDPOINTS.CASH_REGISTER.SUMMARY);
+      return await httpClient.get<Record<string, unknown>>(API_ENDPOINTS.CASH_REGISTER.SUMMARY);
     } catch (error) {
       console.error('Error getting cash register summary:', error);
       throw new Error('Error al cargar el resumen de caja');
@@ -215,7 +213,7 @@ export const cashRegisterService = {
         
         let registers = [...mockCashRegistersAligned];
         
-        if (filters) {
+        if (filters?.startDate && filters?.endDate) {
           const fromDate = new Date(filters.startDate);
           const toDate = new Date(filters.endDate);
           
@@ -226,16 +224,22 @@ export const cashRegisterService = {
         }
         
         const closedRegisters = registers.filter(r => r.status === 'closed');
+        const totalVentas = closedRegisters.reduce((sum, r) => sum + r.totalSales, 0);
+        const totalGastos = closedRegisters.reduce((sum, r) => sum + r.totalExpenses, 0);
         
         return {
+          ventasEfectivo: closedRegisters.reduce((sum, r) => sum + (r.paymentBreakdown?.efectivo || 0), 0),
+          ventasYape: closedRegisters.reduce((sum, r) => sum + (r.paymentBreakdown?.yape || 0), 0),
+          ventasPlin: closedRegisters.reduce((sum, r) => sum + (r.paymentBreakdown?.plin || 0), 0),
+          ventasTarjeta: closedRegisters.reduce((sum, r) => sum + (r.paymentBreakdown?.tarjeta || 0), 0),
+          totalVentas,
+          totalGastos,
+          diferencia: totalVentas - totalGastos,
           totalCajas: registers.length,
           cajasAbiertas: registers.filter(r => r.status === 'open').length,
           cajasCerradas: closedRegisters.length,
-          totalVentas: closedRegisters.reduce((sum, r) => sum + r.totalSales, 0),
-          totalGastos: closedRegisters.reduce((sum, r) => sum + r.totalExpenses, 0),
-          promedioVentasPorCaja: closedRegisters.length > 0 ? 
-            closedRegisters.reduce((sum, r) => sum + r.totalSales, 0) / closedRegisters.length : 0,
-          cajeroMasActivo: 'Juan Cajero', // Mock
+          promedioVentasPorCaja: closedRegisters.length > 0 ? totalVentas / closedRegisters.length : 0,
+          cajeroMasActivo: 'Juan Cajero',
         };
       }
       
@@ -252,9 +256,9 @@ export const cashRegisterService = {
   },
 
   /**
-   * Actualizar totales de caja (para sincronización)
+   * Actualizar totales de caja
    */
-  updateTotals: async (id: number, totals: { totalSales?: number; totalExpenses?: number; paymentBreakdown?: any }): Promise<CashRegister> => {
+  updateTotals: async (id: number, totals: { totalSales?: number; totalExpenses?: number; paymentBreakdown?: CashRegister['paymentBreakdown'] }): Promise<CashRegister> => {
     try {
       if (API_CONFIG.USE_MOCKS) {
         await simulateDelay();
@@ -272,7 +276,6 @@ export const cashRegisterService = {
         return mockCashRegistersAligned[index];
       }
       
-      // Para el backend real, esto podría ser un endpoint específico o parte del cierre
       return await httpClient.patch<CashRegister>(
         API_ENDPOINTS.CASH_REGISTER.BY_ID(id), 
         totals

@@ -12,9 +12,9 @@ import type {
 import type { User } from '@/contexts/AuthContext';
 
 export const mockUsers: User[] = [
-  { id: 1, username: 'admin', role: 'administrador', nombre: 'Administrador Sistema' },
-  { id: 2, username: 'supervisor1', role: 'supervisor', nombre: 'María Supervisor' },
-  { id: 3, username: 'cajero1', role: 'cajero', nombre: 'Juan Cajero' },
+  { id: 1, username: 'admin', role: 'ADMIN', nombre: 'Administrador Sistema' },
+  { id: 2, username: 'supervisor1', role: 'SUPERVISOR', nombre: 'María Supervisor' },
+  { id: 3, username: 'cajero1', role: 'CAJERO', nombre: 'Juan Cajero' },
 ];
 
 export const mockProducts: Product[] = [
