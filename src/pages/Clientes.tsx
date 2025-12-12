@@ -235,21 +235,33 @@ export default function Clientes() {
   const handleSendWhatsApp = async (dni: string) => {
     try {
       toast.loading('Enviando información por WhatsApp...');
+      
+      // Obtener token de autenticación
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
+
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/clientes/send-info/${dni}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+        }
         throw new Error('Error al enviar información');
       }
 
       toast.success('Información enviada por WhatsApp exitosamente');
     } catch (error) {
       console.error('Error al enviar WhatsApp:', error);
-      toast.error('Error al enviar información por WhatsApp');
+      const errorMessage = error instanceof Error ? error.message : 'Error al enviar información por WhatsApp';
+      toast.error(errorMessage);
     }
   };
 
