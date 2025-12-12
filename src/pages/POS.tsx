@@ -81,7 +81,7 @@ export default function POS() {
     );
   });
 
-  // Filtrar clientes localmente (patrón como en Clientes.tsx)
+  // Filtrar clientes localmente - por nombre, DNI o código corto
   const filteredClients = (clients || []).filter(cliente => {
     if (!cliente?.nombres || !cliente?.dni) return false;
     
@@ -90,7 +90,7 @@ export default function POS() {
       cliente.nombres.toLowerCase().includes(searchTermLower) ||
       cliente.apellidos.toLowerCase().includes(searchTermLower) ||
       cliente.dni.includes(clientSearchTerm) ||
-      (cliente.telefono || '').includes(clientSearchTerm)
+      (cliente.codigoCorto || '').toLowerCase().includes(searchTermLower)
     );
   });
 
@@ -259,7 +259,7 @@ export default function POS() {
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                         <Input
                           type="text"
-                          placeholder="Buscar por nombre, DNI, teléfono..."
+                          placeholder="Buscar por nombre, DNI o código..."
                           value={clientSearchTerm}
                           onChange={(e) => setClientSearchTerm(e.target.value)}
                           className="pl-9"
@@ -282,7 +282,7 @@ export default function POS() {
                           <div className="text-left flex-1">
                             <div className="font-medium">{client.nombres} {client.apellidos}</div>
                             <div className="text-xs text-muted-foreground">
-                              {client.telefono} • {client.puntosAcumulados} pts
+                              <span className="font-mono text-primary">{client.codigoCorto || '-'}</span> • {client.puntosAcumulados} pts
                             </div>
                           </div>
                           </Button>
@@ -323,8 +323,12 @@ export default function POS() {
                   <div className="space-y-2">
                     {activeTicket.items.map((item, itemIndex) => {
                       const product = products.find(p => p.id === item.productId);
-                      const hasWholesalePrice = product?.precioMayoreo && product.precioMayoreo > 0;
+                      // Solo mostrar badge de mayoreo si el producto TIENE precio de mayoreo > 0
+                      const wholesalePrice = product?.precioMayoreo ? parseFloat(String(product.precioMayoreo)) : 0;
+                      const hasWholesalePrice = wholesalePrice > 0;
                       const isWholesale = item.isWholesale || false;
+                      // Solo mostrar puntos si el valor es mayor a 0
+                      const showPointsBadge = item.puntosValor > 0;
                       
                       return (
                         <div key={`${item.productId}-${itemIndex}`} className="flex flex-col gap-2 p-2 bg-muted/50 rounded-lg">
@@ -333,7 +337,7 @@ export default function POS() {
                               <p className="font-medium truncate">{item.descripcion}</p>
                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <span>S/ {item.precio.toFixed(2)}</span>
-                                {item.puntosValor > 0 && (
+                                {showPointsBadge && (
                                   <Badge variant="secondary" className="text-xs">
                                     {item.puntosValor} pts
                                   </Badge>
