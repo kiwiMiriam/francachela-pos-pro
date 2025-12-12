@@ -278,7 +278,7 @@ export default function Clientes() {
     });
   };
 
-  // Filtrar clientes localmente (sin usar el endpoint de búsqueda)
+  // Filtrar clientes localmente - por nombre, DNI o código corto
   const filteredClientes = (clientes || []).filter(cliente => {
     if (!cliente?.nombres || !cliente?.dni) return false;
     
@@ -287,7 +287,7 @@ export default function Clientes() {
       cliente.nombres.toLowerCase().includes(searchTermLower) ||
       cliente.apellidos.toLowerCase().includes(searchTermLower) ||
       cliente.dni.includes(searchTerm) ||
-      (cliente.telefono || '').includes(searchTerm)
+      (cliente.codigoCorto || '').toLowerCase().includes(searchTermLower)
     );
   });
 
@@ -475,7 +475,7 @@ export default function Clientes() {
       <div className="relative">
         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar por nombre, DNI o teléfono..."
+          placeholder="Buscar por nombre, DNI o código..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-10"
@@ -490,7 +490,12 @@ export default function Clientes() {
             <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
               <CardTitle className="flex items-center gap-3 text-lg">
                 <Users className="h-5 w-5 text-primary" />
-                {cliente.nombres} {cliente.apellidos}
+                <div className="flex flex-col">
+                  <span>{cliente.nombres} {cliente.apellidos}</span>
+                  {cliente.codigoCorto && (
+                    <span className="text-xs font-mono text-primary">{cliente.codigoCorto}</span>
+                  )}
+                </div>
               </CardTitle>
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Badge variant="secondary" className="gap-1">
@@ -506,7 +511,11 @@ export default function Clientes() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Código</p>
+                  <p className="font-semibold font-mono text-primary">{cliente.codigoCorto || '-'}</p>
+                </div>
                 <div>
                   <p className="text-sm text-muted-foreground">DNI</p>
                   <p className="font-semibold">{cliente.dni}</p>
@@ -526,9 +535,9 @@ export default function Clientes() {
                 )}
                
                 {cliente.direccion && (
-                  <div className="sm:col-span-2 lg:col-span-1">
+                  <div>
                     <p className="text-sm text-muted-foreground">Dirección</p>
-                    <p className="font-semibold text-sm">{cliente.direccion}</p>
+                    <p className="font-semibold text-sm truncate">{cliente.direccion}</p>
                   </div>
                 )}
               </div>

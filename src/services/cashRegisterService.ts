@@ -169,7 +169,7 @@ export const cashRegisterService = {
   /**
    * Obtener resumen de caja registradora
    */
-  getSummary: async (id: number): Promise<Record<string, unknown>> => {
+  getSummary: async (id: number): Promise<CashRegisterStatistics> => {
     try {
       if (API_CONFIG.USE_MOCKS) {
         await simulateDelay();
@@ -180,23 +180,20 @@ export const cashRegisterService = {
         }
         
         return {
-          cajaId: register.id,
-          cajero: register.cashier,
-          fechaApertura: register.openedAt,
-          fechaCierre: register.closedAt,
-          montoInicial: register.initialCash,
-          montoFinal: register.finalCash,
+          ventasEfectivo: register.paymentBreakdown?.efectivo || 0,
+          ventasYape: register.paymentBreakdown?.yape || 0,
+          ventasPlin: register.paymentBreakdown?.plin || 0,
+          ventasTarjeta: register.paymentBreakdown?.tarjeta || 0,
           totalVentas: register.totalSales,
           totalGastos: register.totalExpenses,
-          diferencia: register.finalCash ? 
-            (register.finalCash - register.initialCash - register.totalSales + register.totalExpenses) : 0,
-          desglosePagos: register.paymentBreakdown,
-          ventasCount: 25,
-          gastosCount: 3,
+          diferencia: register.totalSales - register.totalExpenses,
+          totalCajas: 1,
+          cajasAbiertas: register.status === 'open' ? 1 : 0,
+          cajasCerradas: register.status === 'closed' ? 1 : 0,
         };
       }
       
-      return await httpClient.get<Record<string, unknown>>(API_ENDPOINTS.CASH_REGISTER.SUMMARY);
+      return await httpClient.get<CashRegisterStatistics>(API_ENDPOINTS.CASH_REGISTER.SUMMARY);
     } catch (error) {
       console.error('Error getting cash register summary:', error);
       throw new Error('Error al cargar el resumen de caja');

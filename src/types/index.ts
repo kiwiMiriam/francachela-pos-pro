@@ -138,6 +138,8 @@ export interface Combo {
   products: {
     productId: number;
     quantity: number;
+    productoId?: number;
+    cantidad?: number;
   }[];
   originalPrice: number;
   comboPrice: number;
