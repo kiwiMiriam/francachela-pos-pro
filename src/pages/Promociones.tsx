@@ -129,7 +129,7 @@ export default function Promociones() {
   });
 
   // Mapear frontend a backend para combos
-  const mapComboToBackend = (formData: typeof comboFormData): Omit<BackendCombo, 'id'> => ({
+  const mapComboToBackend = (formData: typeof comboFormData) => ({
     nombre: formData.nombre,
     descripcion: formData.descripcion,
     productos: formData.productos.map(p => ({ productoId: p.productId, cantidad: p.quantity })),
@@ -185,25 +185,21 @@ export default function Promociones() {
     try {
       const backendData = mapComboToBackend(comboFormData);
       
+      // Mapear a la estructura que espera el servicio
+      const serviceData = {
+        name: backendData.nombre,
+        description: backendData.descripcion,
+        products: comboFormData.productos.map(p => ({ productId: p.productId, quantity: p.quantity })),
+        originalPrice: backendData.precioOriginal,
+        comboPrice: backendData.precioCombo,
+        active: backendData.active,
+      };
+      
       if (editingCombo) {
-        await combosService.update(editingCombo.id, {
-          name: backendData.nombre,
-          description: backendData.descripcion,
-          products: backendData.productos,
-          originalPrice: backendData.precioOriginal,
-          comboPrice: backendData.precioCombo,
-          active: backendData.active,
-        });
+        await combosService.update(editingCombo.id, serviceData);
         toast.success('Combo actualizado correctamente');
       } else {
-        await combosService.create({
-          name: backendData.nombre,
-          description: backendData.descripcion,
-          products: backendData.productos,
-          originalPrice: backendData.precioOriginal,
-          comboPrice: backendData.precioCombo,
-          active: backendData.active,
-        });
+        await combosService.create(serviceData);
         toast.success('Combo creado correctamente');
       }
       

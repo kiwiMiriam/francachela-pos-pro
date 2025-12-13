@@ -101,10 +101,9 @@ export function POSProvider({ children }: { children: React.ReactNode }) {
           }
           
           // Agregar nuevo item
-          // Calcular puntos: si hay valorPuntos del producto, usarlo; sino usar precio * 10
-          const puntosValor = (product.valorPuntos || 0) > 0 
-            ? product.valorPuntos 
-            : Math.floor(precio * 10);
+          // Usar el valorPuntos del producto SOLO si es mayor a 0
+          // Si es 0 o no existe, el badge no debería mostrarse
+          const puntosValor = product.valorPuntos || 0;
           
           const newItem: POSItem = {
             id: product.id,

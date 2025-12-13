@@ -1,64 +1,533 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Receipt } from 'lucide-react';
-import { expensesAPI } from '@/services/api'; // TODO: Migrar a hooks
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Receipt, Plus, Search, Calendar, DollarSign, TrendingUp, Filter, Pencil, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { expensesService } from '@/services/expensesService';
 import type { Expense } from '@/types';
+
+// Categorías de gastos según el backend
+const EXPENSE_CATEGORIES = [
+  'OPERATIVO',
+  'ADMINISTRATIVO', 
+  'MARKETING',
+  'MANTENIMIENTO',
+  'SERVICIOS',
+  'OTROS'
+];
+
+const PAYMENT_METHODS = [
+  'EFECTIVO',
+  'TARJETA',
+  'YAPE',
+  'PLIN'
+];
 
 export default function Gastos() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [todayExpenses, setTodayExpenses] = useState<Expense[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('todos');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
+  const [formData, setFormData] = useState({
+    description: '',
+    amount: 0,
+    category: '',
+    paymentMethod: '',
+    provider: '',
+    receiptNumber: '',
+    receipt: ''
+  });
 
   useEffect(() => {
-    loadExpenses();
+    loadData();
   }, []);
 
-  const loadExpenses = async () => {
-    const data = await expensesAPI.getAll();
-    setExpenses(data);
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Ahora los servicios ya retornan arrays garantizados
+      const [allExpenses, todayData, categoriesData] = await Promise.all([
+        expensesService.getAll(),
+        expensesService.getToday(),
+        expensesService.getCategories()
+      ]);
+      
+      setExpenses(allExpenses);
+      setTodayExpenses(todayData);
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error('Unexpected error loading expenses:', error);
+      // Los servicios ya manejan los errores y retornan valores por defecto
+      setExpenses([]);
+      setTodayExpenses([]);
+      setCategories(EXPENSE_CATEGORIES);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.description || !formData.amount || !formData.category || !formData.paymentMethod) {
+      toast.error('Por favor completa todos los campos requeridos');
+      return;
+    }
+
+    try {
+      const expenseData = {
+        date: new Date().toISOString().split('T')[0],
+        description: formData.description,
+        amount: formData.amount,
+        category: formData.category,
+        paymentMethod: formData.paymentMethod as 'EFECTIVO' | 'TARJETA' | 'YAPE' | 'PLIN',
+        provider: formData.provider,
+        receiptNumber: formData.receiptNumber,
+        receipt: formData.receipt
+      };
+
+      if (editingExpense) {
+        await expensesService.update(editingExpense.id, expenseData);
+        toast.success('Gasto actualizado correctamente');
+      } else {
+        await expensesService.create(expenseData);
+        toast.success('Gasto registrado correctamente');
+      }
+      
+      setIsDialogOpen(false);
+      resetForm();
+      loadData();
+    } catch (error) {
+      console.error('Error saving expense:', error);
+      toast.error('Error al guardar gasto');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('¿Estás seguro de eliminar este gasto?')) return;
+    
+    try {
+      await expensesService.delete(id);
+      toast.success('Gasto eliminado correctamente');
+      loadData();
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      toast.error('Error al eliminar gasto');
+    }
+  };
+
+  const openEditDialog = (expense: Expense) => {
+    setEditingExpense(expense);
+    setFormData({
+      description: expense.description || '',
+      amount: expense.amount || 0,
+      category: expense.category || '',
+      paymentMethod: expense.paymentMethod || '',
+      provider: expense.provider || '',
+      receiptNumber: expense.receiptNumber || '',
+      receipt: expense.receipt || ''
+    });
+    setIsDialogOpen(true);
+  };
+
+  const resetForm = () => {
+    setEditingExpense(null);
+    setFormData({
+      description: '',
+      amount: 0,
+      category: '',
+      paymentMethod: '',
+      provider: '',
+      receiptNumber: '',
+      receipt: ''
+    });
+  };
+
+  // Datos están garantizados como arrays por los servicios
+  const filteredExpenses = expenses.filter(expense => {
+    const matchesSearch = expense.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         expense.provider?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'todos' || expense.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const todayTotal = todayExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Gastos</h1>
-        <p className="text-muted-foreground">Control de gastos del negocio</p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Total Gastos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-3xl font-bold text-destructive">S/ {totalExpenses.toFixed(2)}</p>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4">
-        {expenses.map((expense) => (
-          <Card key={expense.id}>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Receipt className="h-5 w-5 text-primary" />
-                <div>
-                  <CardTitle className="text-lg">{expense.description}</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(expense.date).toLocaleString('es-PE')}
-                  </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Gastos</h1>
+          <p className="text-muted-foreground">Control y gestión de gastos del negocio</p>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) resetForm();
+        }}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nuevo Gasto
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{editingExpense ? 'Editar Gasto' : 'Registrar Nuevo Gasto'}</DialogTitle>
+              <DialogDescription>
+                {editingExpense ? 'Actualiza la información del gasto' : 'Completa los datos del nuevo gasto'}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="description">Descripción *</Label>
+                  <Input
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Descripción del gasto"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Monto S/ *</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    value={formData.amount || ''}
+                    onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+                    placeholder="0.00"
+                    required
+                  />
                 </div>
               </div>
-              <span className="text-lg font-bold text-destructive">S/ {expense.amount.toFixed(2)}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Categoría *</Label>
+                  <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar categoría" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EXPENSE_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Método de Pago *</Label>
+                  <Select value={formData.paymentMethod} onValueChange={(value) => setFormData({ ...formData, paymentMethod: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar método" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAYMENT_METHODS.map((method) => (
+                        <SelectItem key={method} value={method}>{method}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="provider">Proveedor</Label>
+                  <Input
+                    id="provider"
+                    value={formData.provider}
+                    onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
+                    placeholder="Nombre del proveedor"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="receiptNumber">N° Comprobante</Label>
+                  <Input
+                    id="receiptNumber"
+                    value={formData.receiptNumber}
+                    onChange={(e) => setFormData({ ...formData, receiptNumber: e.target.value })}
+                    placeholder="F001-00001234"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="receipt">URL Comprobante</Label>
+                <Input
+                  id="receipt"
+                  value={formData.receipt}
+                  onChange={(e) => setFormData({ ...formData, receipt: e.target.value })}
+                  placeholder="https://ejemplo.com/comprobante.pdf"
+                />
+              </div>
+              <DialogFooter>
+                <Button type="submit" className="w-full">
+                  {editingExpense ? 'Actualizar' : 'Registrar'} Gasto
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Resumen</TabsTrigger>
+          <TabsTrigger value="expenses">Gastos</TabsTrigger>
+          <TabsTrigger value="analytics">Análisis</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          {/* Estadísticas principales */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Gastos</p>
+                    <p className="text-2xl font-bold text-destructive">S/ {totalExpenses.toFixed(2)}</p>
+                  </div>
+                  <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">
+                    <DollarSign className="h-4 w-4 text-red-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Gastos Hoy</p>
+                    <p className="text-2xl font-bold text-orange-600">S/ {todayTotal.toFixed(2)}</p>
+                  </div>
+                  <div className="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
+                    <Calendar className="h-4 w-4 text-orange-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Registros</p>
+                    <p className="text-2xl font-bold text-primary">{expenses.length}</p>
+                  </div>
+                  <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Receipt className="h-4 w-4 text-primary" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Promedio Diario</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      S/ {expenses.length > 0 ? (totalExpenses / Math.max(expenses.length, 1)).toFixed(2) : '0.00'}
+                    </p>
+                  </div>
+                  <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <TrendingUp className="h-4 w-4 text-blue-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Gastos recientes */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Gastos Recientes</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-4">
-                <Badge>{expense.category}</Badge>
-                <Badge variant="outline">{expense.paymentMethod}</Badge>
+              <div className="space-y-4">
+                {expenses.slice(0, 5).map((expense) => (
+                  <div key={expense.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Receipt className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="font-semibold">{expense.description}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {expense.category} • {new Date(expense.creationDate || '').toLocaleDateString('es-PE')}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-destructive">S/ {expense.amount?.toFixed(2)}</p>
+                      <Badge variant="outline">{expense.paymentMethod}</Badge>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+        </TabsContent>
+
+        <TabsContent value="expenses" className="space-y-4">
+          {/* Filtros */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="h-5 w-5" />
+                Filtros
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label>Buscar</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar gastos..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Categoría</Label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todas las categorías</SelectItem>
+                      {EXPENSE_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Fecha Desde</Label>
+                  <Input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Fecha Hasta</Label>
+                  <Input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Lista de gastos */}
+          <div className="grid gap-4">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="text-center">
+                  <Receipt className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
+                  <p>Cargando gastos...</p>
+                </div>
+              </div>
+            ) : filteredExpenses.length > 0 ? (
+              filteredExpenses.map((expense) => (
+                <Card key={expense.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Receipt className="h-5 w-5 text-primary" />
+                        <div>
+                          <p className="font-semibold text-lg">{expense.description}</p>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span>{new Date(expense.creationDate || '').toLocaleString('es-PE')}</span>
+                            <Badge variant="outline">{expense.category}</Badge>
+                            <Badge variant="secondary">{expense.paymentMethod}</Badge>
+                            {expense.provider && <span>• {expense.provider}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right mr-4">
+                          <p className="text-2xl font-bold text-destructive">S/ {expense.amount?.toFixed(2)}</p>
+                          {expense.voucherNumber && (
+                            <p className="text-sm text-muted-foreground">{expense.voucherNumber}</p>
+                          )}
+                        </div>
+                        <Button size="icon" variant="ghost" onClick={() => openEditDialog(expense)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => handleDelete(expense.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center py-8">
+                    <Receipt className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-lg font-semibold mb-2">No hay gastos registrados</p>
+                    <p className="text-muted-foreground">Los gastos aparecerán aquí cuando los registres</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Análisis por Categoría</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {EXPENSE_CATEGORIES.map((category) => {
+                  const categoryExpenses = expenses.filter(e => e.category === category);
+                  const categoryTotal = categoryExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+                  const percentage = totalExpenses > 0 ? (categoryTotal / totalExpenses) * 100 : 0;
+                  
+                  return (
+                    <div key={category} className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">{category}</span>
+                        <span className="text-sm text-muted-foreground">
+                          S/ {categoryTotal.toFixed(2)} ({percentage.toFixed(1)}%)
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-primary h-2 rounded-full transition-all duration-300" 
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
