@@ -140,7 +140,7 @@ export default function Productos() {
         break;
       }
       case 'precioMayoreo': {
-        const validation = validatePrice(Number(value), 'El precio mayoreo', true); // Permite 0
+        const validation = validatePrice(Number(value), 'El precio mayoreo', false); // No permite 0 - debe ser mayor que 0
         if (!validation.isValid) {
           errors.precioMayoreo = validation.message;
         } else {
@@ -149,20 +149,32 @@ export default function Productos() {
         break;
       }
       case 'cantidadActual': {
-        const validation = validateQuantity(Number(value), 'El stock actual', true); // Permite 0
-        if (!validation.isValid) {
-          errors.cantidadActual = validation.message;
-        } else {
+        // Si no usa inventario, no validar (se enviará 0)
+        if (!formData.usaInventario) {
           delete errors.cantidadActual;
+        } else {
+          // Si usa inventario, debe ser mayor que 0
+          const validation = validateQuantity(Number(value), 'El stock actual', false); // No permite 0
+          if (!validation.isValid) {
+            errors.cantidadActual = validation.message;
+          } else {
+            delete errors.cantidadActual;
+          }
         }
         break;
       }
       case 'cantidadMinima': {
-        const validation = validateQuantity(Number(value), 'El stock mínimo', true); // Permite 0
-        if (!validation.isValid) {
-          errors.cantidadMinima = validation.message;
-        } else {
+        // Si no usa inventario, no validar (se enviará 0)
+        if (!formData.usaInventario) {
           delete errors.cantidadMinima;
+        } else {
+          // Si usa inventario, puede ser 0 o mayor
+          const validation = validateQuantity(Number(value), 'El stock mínimo', true); // Permite 0
+          if (!validation.isValid) {
+            errors.cantidadMinima = validation.message;
+          } else {
+            delete errors.cantidadMinima;
+          }
         }
         break;
       }
@@ -206,11 +218,18 @@ export default function Productos() {
     }
     
     try {
+      // Preparar datos para envío - si no usa inventario, enviar stock en 0
+      const dataToSend = {
+        ...formData,
+        cantidadActual: formData.usaInventario ? formData.cantidadActual : 0,
+        cantidadMinima: formData.usaInventario ? formData.cantidadMinima : 0,
+      };
+
       if (editingProduct) {
-        await updateProduct.mutateAsync({ id: editingProduct.id, data: formData });
+        await updateProduct.mutateAsync({ id: editingProduct.id, data: dataToSend });
         toast.success('Producto actualizado correctamente');
       } else {
-        await createProduct.mutateAsync(formData as Omit<Product, 'id'>);
+        await createProduct.mutateAsync(dataToSend as Omit<Product, 'id'>);
         toast.success('Producto creado correctamente');
       }
       
@@ -512,7 +531,7 @@ export default function Productos() {
                       <Input
                         id="stock"
                         type="number"
-                        value={formData.cantidadActual || ''}
+                        value={formData.usaInventario ? (formData.cantidadActual || '') : 0}
                         onChange={(e) => {
                           const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
                           setFormData({ ...formData, cantidadActual: value });
@@ -521,6 +540,7 @@ export default function Productos() {
                         }}
                         placeholder="0"
                         className={validationErrors.cantidadActual ? 'border-destructive' : ''}
+                        disabled={!formData.usaInventario}
                       />
                       {validationErrors.cantidadActual && (
                         <p className="text-xs text-destructive flex items-center gap-1">
@@ -534,7 +554,7 @@ export default function Productos() {
                       <Input
                         id="minStock"
                         type="number"
-                        value={formData.cantidadMinima || ''}
+                        value={formData.usaInventario ? (formData.cantidadMinima || '') : 0}
                         onChange={(e) => {
                           const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
                           setFormData({ ...formData, cantidadMinima: value });
@@ -543,6 +563,7 @@ export default function Productos() {
                         }}
                         placeholder="0"
                         className={validationErrors.cantidadMinima ? 'border-destructive' : ''}
+                        disabled={!formData.usaInventario}
                       />
                       {validationErrors.cantidadMinima && (
                         <p className="text-xs text-destructive flex items-center gap-1">
@@ -652,8 +673,18 @@ export default function Productos() {
                       type="checkbox"
                       checked={formData.usaInventario}
                       onChange={(e) => {
-                        setFormData({ ...formData, usaInventario: e.target.checked });
+                        const usaInventario = e.target.checked;
+                        setFormData({ 
+                          ...formData, 
+                          usaInventario,
+                          // Si no usa inventario, resetear stock a 0
+                          cantidadActual: usaInventario ? formData.cantidadActual : 0,
+                          cantidadMinima: usaInventario ? formData.cantidadMinima : 0,
+                        });
                         if (editingProduct) setHasChanges(true);
+                        // Revalidar campos de stock
+                        validateField('cantidadActual', usaInventario ? formData.cantidadActual : 0);
+                        validateField('cantidadMinima', usaInventario ? formData.cantidadMinima : 0);
                       }}
                       className="w-4 h-4"
                     />
@@ -735,22 +766,140 @@ export default function Productos() {
         </TabsContent>
 
         <TabsContent value="movimientos" className="space-y-6">
-          <div>
-            <h2 className="text-2xl font-bold mb-2">Movimientos de Inventario</h2>
-            <p className="text-muted-foreground">Historial de entradas, salidas y ajustes</p>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Movimientos de Inventario</h2>
+              <p className="text-muted-foreground">Historial de entradas, salidas y ajustes</p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => loadMovements()}
+                disabled={isLoadingMovements}
+              >
+                Actualizar
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  // Exportar movimientos (placeholder)
+                  toast.info('Función de exportación próximamente');
+                }}
+              >
+                Exportar
+              </Button>
+            </div>
+          </div>
+
+          {/* Filtros de movimientos */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Filtros</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label>Tipo de Movimiento</Label>
+                  <Select defaultValue="todos">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="ENTRADA">Entradas</SelectItem>
+                      <SelectItem value="SALIDA">Salidas</SelectItem>
+                      <SelectItem value="AJUSTE">Ajustes</SelectItem>
+                      <SelectItem value="VENTA">Ventas</SelectItem>
+                      <SelectItem value="DEVOLUCION">Devoluciones</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Fecha Desde</Label>
+                  <Input type="date" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Fecha Hasta</Label>
+                  <Input type="date" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Cajero</Label>
+                  <Input placeholder="Buscar por cajero..." />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Estadísticas rápidas */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Movimientos Hoy</p>
+                    <p className="text-2xl font-bold text-primary">
+                      {movimientos.filter(m => {
+                        const today = new Date().toDateString();
+                        return new Date(m.HORA).toDateString() === today;
+                      }).length}
+                    </p>
+                  </div>
+                  <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Package className="h-4 w-4 text-primary" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Entradas</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {movimientos.filter(m => m.TIPO === 'entrada').length}
+                    </p>
+                  </div>
+                  <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <Plus className="h-4 w-4 text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Salidas</p>
+                    <p className="text-2xl font-bold text-red-600">
+                      {movimientos.filter(m => m.TIPO === 'salida').length}
+                    </p>
+                  </div>
+                  <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">
+                    <ArrowUpDown className="h-4 w-4 text-red-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {isLoadingMovements ? (
-            <div className="flex items-center justify-center h-32">Cargando movimientos...</div>
+            <div className="flex items-center justify-center h-32">
+              <div className="text-center">
+                <Package className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
+                <p>Cargando movimientos...</p>
+              </div>
+            </div>
           ) : (
             <div className="grid gap-4">
               {movimientos.slice(0, 50).map((mov) => (
-                <Card key={mov.id}>
+                <Card key={mov.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="pt-6">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                       <div>
                         <p className="text-sm text-muted-foreground">Fecha/Hora</p>
-                        <p className="font-semibold text-sm">{new Date(mov.HORA).toLocaleString()}</p>
+                        <p className="font-semibold text-sm">{new Date(mov.HORA).toLocaleString('es-PE')}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Producto</p>
@@ -764,16 +913,33 @@ export default function Productos() {
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Cantidad</p>
-                        <p className="font-semibold">{mov.CANTIDAD}</p>
+                        <p className={`font-semibold ${mov.TIPO === 'entrada' ? 'text-green-600' : mov.TIPO === 'salida' ? 'text-red-600' : 'text-blue-600'}`}>
+                          {mov.TIPO === 'entrada' ? '+' : mov.TIPO === 'salida' ? '-' : '±'}{mov.CANTIDAD}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Cajero</p>
-                        <p className="font-semibold">{mov.CAJERO}</p>
+                        <p className="font-semibold text-sm">{mov.CAJERO}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Descripción</p>
+                        <p className="text-sm text-muted-foreground">{mov.DESCRIPCION || 'Sin descripción'}</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               ))}
+              {movimientos.length === 0 && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center py-8">
+                      <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-lg font-semibold mb-2">No hay movimientos registrados</p>
+                      <p className="text-muted-foreground">Los movimientos de inventario aparecerán aquí</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
         </TabsContent>

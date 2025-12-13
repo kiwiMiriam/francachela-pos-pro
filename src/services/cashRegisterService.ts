@@ -1,6 +1,7 @@
 import { API_CONFIG, API_ENDPOINTS } from '@/config/api';
 import { httpClient, simulateDelay } from './httpClient';
 import { mockCashRegistersAligned } from './mockDataAligned';
+import { ensureArray } from '@/utils/apiValidators';
 import type { CashRegister } from '@/types';
 import type { 
   CashRegisterOpenRequest,
@@ -59,10 +60,13 @@ export const cashRegisterService = {
       if (filters?.endDate) queryParams.append('to', filters.endDate);
       
       const url = `${API_ENDPOINTS.CASH_REGISTER.BY_RANGE}${queryParams.toString() ? `?${queryParams}` : ''}`;
-      return await httpClient.get<CashRegister[]>(url);
+      const result = await httpClient.get<CashRegister[]>(url);
+      // Asegurar que siempre retorna un array
+      return ensureArray(result, []);
     } catch (error) {
       console.error('Error getting cash register history:', error);
-      throw new Error('Error al cargar el historial de cajas');
+      // Retornar array vacío en lugar de lanzar error
+      return [];
     }
   },
 

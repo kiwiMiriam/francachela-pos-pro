@@ -1,4 +1,4 @@
-import { ShoppingCart, LayoutDashboard, Package, Users, Gift, Home, TrendingUp } from "lucide-react";
+import { ShoppingCart, LayoutDashboard, Package, Users, Gift, Home, TrendingUp, Receipt, DollarSign } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
   Sidebar,
@@ -19,6 +19,8 @@ const menuItems = [
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Ventas", url: "/ventas", icon: TrendingUp },
   { title: "Promociones", url: "/promociones", icon: Gift },
+  { title: "Gastos", url: "/gastos", icon: Receipt },
+  { title: "Caja", url: "/caja", icon: DollarSign },
 ];
 
 export function AppSidebar() {

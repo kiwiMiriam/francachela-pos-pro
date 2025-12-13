@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Users, Star, Plus, Pencil, Trash2, Search, AlertCircle, Check, Calendar } from "lucide-react";
+import { Users, Star, Plus, Pencil, Trash2, Search, AlertCircle, Check, Calendar, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from "@/hooks";
 import { clientsService } from '@/services/clientsService';
@@ -228,6 +228,39 @@ export default function Clientes() {
       refetch();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error al eliminar cliente';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleSendWhatsApp = async (dni: string) => {
+    try {
+      toast.loading('Enviando información por WhatsApp...');
+      
+      // Obtener token de autenticación
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/clientes/send-info/${dni}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+        }
+        throw new Error('Error al enviar información');
+      }
+
+      toast.success('Información enviada por WhatsApp exitosamente');
+    } catch (error) {
+      console.error('Error al enviar WhatsApp:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al enviar información por WhatsApp';
       toast.error(errorMessage);
     }
   };
@@ -502,6 +535,9 @@ export default function Clientes() {
                   <Star className="h-3 w-3" />
                   {cliente.puntosAcumulados} pts
                 </Badge>
+                <Button size="icon" variant="ghost" onClick={() => handleSendWhatsApp(cliente.dni)} title="Enviar información por WhatsApp">
+                  <MessageCircle className="h-4 w-4" />
+                </Button>
                 <Button size="icon" variant="ghost" onClick={() => openEditDialog(cliente)}>
                   <Pencil className="h-4 w-4" />
                 </Button>
