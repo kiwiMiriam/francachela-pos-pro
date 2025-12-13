@@ -1,6 +1,7 @@
 import { API_CONFIG, API_ENDPOINTS } from '@/config/api';
 import { httpClient, simulateDelay } from './httpClient';
 import { mockExpensesAligned, mockExpenseCategories } from './mockDataAligned';
+import { ensureArray } from '@/utils/apiValidators';
 import type { Expense } from '@/types';
 import type { 
   ExpenseCreateRequest,
@@ -41,10 +42,13 @@ export const expensesService = {
       if (params?.limit) queryParams.append('limit', params.limit.toString());
       
       const url = `${API_ENDPOINTS.EXPENSES.BASE}${queryParams.toString() ? `?${queryParams}` : ''}`;
-      return await httpClient.get<Expense[]>(url);
+      const result = await httpClient.get<Expense[]>(url);
+      // Asegurar que siempre retorna un array
+      return ensureArray(result, []);
     } catch (error) {
       console.error('Error getting expenses:', error);
-      throw new Error('Error al cargar los gastos');
+      // Retornar array vacío en lugar de lanzar error
+      return [];
     }
   },
 
@@ -86,10 +90,13 @@ export const expensesService = {
         );
       }
       
-      return await httpClient.get<Expense[]>(API_ENDPOINTS.EXPENSES.TODAY);
+      const result = await httpClient.get<Expense[]>(API_ENDPOINTS.EXPENSES.TODAY);
+      // Asegurar que siempre retorna un array
+      return ensureArray(result, []);
     } catch (error) {
       console.error('Error getting today expenses:', error);
-      throw new Error('Error al cargar los gastos del día');
+      // Retornar array vacío en lugar de lanzar error
+      return [];
     }
   },
 
@@ -115,10 +122,13 @@ export const expensesService = {
         to: filters.endDate,
       });
       
-      return await httpClient.get<Expense[]>(`${API_ENDPOINTS.EXPENSES.BY_RANGE}?${queryParams}`);
+      const result = await httpClient.get<Expense[]>(`${API_ENDPOINTS.EXPENSES.BY_RANGE}?${queryParams}`);
+      // Asegurar que siempre retorna un array
+      return ensureArray(result, []);
     } catch (error) {
       console.error('Error getting expenses by date range:', error);
-      throw new Error('Error al cargar los gastos por fecha');
+      // Retornar array vacío en lugar de lanzar error
+      return [];
     }
   },
 
@@ -135,10 +145,13 @@ export const expensesService = {
         );
       }
       
-      return await httpClient.get<Expense[]>(API_ENDPOINTS.EXPENSES.BY_CATEGORY(categoria));
+      const result = await httpClient.get<Expense[]>(API_ENDPOINTS.EXPENSES.BY_CATEGORY(categoria));
+      // Asegurar que siempre retorna un array
+      return ensureArray(result, []);
     } catch (error) {
       console.error('Error getting expenses by category:', error);
-      throw new Error('Error al cargar los gastos por categoría');
+      // Retornar array vacío en lugar de lanzar error
+      return [];
     }
   },
 
@@ -155,10 +168,13 @@ export const expensesService = {
         );
       }
       
-      return await httpClient.get<Expense[]>(API_ENDPOINTS.EXPENSES.BY_CASHIER(cajero));
+      const result = await httpClient.get<Expense[]>(API_ENDPOINTS.EXPENSES.BY_CASHIER(cajero));
+      // Asegurar que siempre retorna un array
+      return ensureArray(result, []);
     } catch (error) {
       console.error('Error getting expenses by cashier:', error);
-      throw new Error('Error al cargar los gastos por cajero');
+      // Retornar array vacío en lugar de lanzar error
+      return [];
     }
   },
 
@@ -275,10 +291,13 @@ export const expensesService = {
       }
       
       const queryParams = new URLSearchParams({ q: query });
-      return await httpClient.get<Expense[]>(`${API_ENDPOINTS.EXPENSES.SEARCH}?${queryParams}`);
+      const result = await httpClient.get<Expense[]>(`${API_ENDPOINTS.EXPENSES.SEARCH}?${queryParams}`);
+      // Asegurar que siempre retorna un array
+      return ensureArray(result, []);
     } catch (error) {
       console.error('Error searching expenses:', error);
-      throw new Error('Error al buscar gastos');
+      // Retornar array vacío en lugar de lanzar error
+      return [];
     }
   },
 
@@ -292,10 +311,13 @@ export const expensesService = {
         return mockExpenseCategories;
       }
       
-      return await httpClient.get<string[]>(API_ENDPOINTS.EXPENSES.CATEGORIES);
+      const result = await httpClient.get<string[]>(API_ENDPOINTS.EXPENSES.CATEGORIES);
+      // Asegurar que siempre retorna un array
+      return ensureArray(result, mockExpenseCategories);
     } catch (error) {
       console.error('Error getting expense categories:', error);
-      throw new Error('Error al cargar las categorías de gastos');
+      // Retornar categorías por defecto en lugar de lanzar error
+      return mockExpenseCategories;
     }
   },
 

@@ -15,8 +15,8 @@ import type { CashRegister } from '@/types';
 export default function Caja() {
   const [current, setCurrent] = useState<CashRegister | null>(null);
   const [history, setHistory] = useState<CashRegister[]>([]);
-  const [summary, setSummary] = useState<any>(null);
-  const [statistics, setStatistics] = useState<any>(null);
+  const [summary, setSummary] = useState(null);
+  const [statistics, setStatistics] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpenDialogOpen, setIsOpenDialogOpen] = useState(false);
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
@@ -40,18 +40,31 @@ export default function Caja() {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [currentData, historyData, summaryData] = await Promise.all([
-        cashRegisterService.getCurrent().catch(() => null),
-        cashRegisterService.getHistory().catch(() => []),
-        cashRegisterService.getSummary().catch(() => null)
-      ]);
+      
+      // Los servicios ya retornan datos validados
+      const currentData = await cashRegisterService.getCurrent().catch(() => null);
+      const historyData = await cashRegisterService.getHistory().catch(() => []);
       
       setCurrent(currentData);
       setHistory(historyData);
-      setSummary(summaryData);
+      
+      // Load summary only if there's a current cash register
+      if (currentData?.id) {
+        try {
+          const summaryData = await cashRegisterService.getSummary(currentData.id).catch(() => null);
+          setSummary(summaryData);
+        } catch (summaryError) {
+          console.error('Error loading summary:', summaryError);
+          // No mostrar toast aquí, continuamos sin el resumen
+        }
+      }
     } catch (error) {
-      console.error('Error loading cash register data:', error);
-      toast.error('Error al cargar datos de caja');
+      console.error('Unexpected error loading cash register data:', error);
+      toast.error('Error inesperado al cargar datos de caja');
+      // Establecer valores por defecto
+      setCurrent(null);
+      setHistory([]);
+      setSummary(null);
     } finally {
       setIsLoading(false);
     }
@@ -104,7 +117,7 @@ export default function Caja() {
     }
 
     try {
-      const stats = await cashRegisterService.getStatistics(dateFrom, dateTo);
+      const stats = await cashRegisterService.getStatistics({dateFrom, dateTo});
       setStatistics(stats);
       toast.success('Estadísticas cargadas correctamente');
     } catch (error) {
@@ -253,7 +266,7 @@ export default function Caja() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-muted-foreground">Monto Inicial</p>
-                        <p className="text-2xl font-bold text-primary">S/ {current.montoInicial?.toFixed(2)}</p>
+                        <p className="text-2xl font-bold text-primary">S/ {current.initialCash?.toFixed(2)}</p>
                       </div>
                       <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
                         <DollarSign className="h-4 w-4 text-primary" />
@@ -267,7 +280,7 @@ export default function Caja() {
                       <div>
                         <p className="text-sm text-muted-foreground">Hora Apertura</p>
                         <p className="text-2xl font-bold text-blue-600">
-                          {new Date(current.fechaApertura || '').toLocaleTimeString('es-PE', { 
+                          {new Date(current.openedAt || '').toLocaleTimeString('es-PE', { 
                             hour: '2-digit', 
                             minute: '2-digit' 
                           })}
@@ -284,7 +297,7 @@ export default function Caja() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-muted-foreground">Cajero</p>
-                        <p className="text-2xl font-bold text-purple-600">{current.cajero || 'N/A'}</p>
+                        <p className="text-2xl font-bold text-purple-600">{current.cashier || 'N/A'}</p>
                       </div>
                       <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
                         <FileText className="h-4 w-4 text-purple-600" />
@@ -313,7 +326,7 @@ export default function Caja() {
                       <div className="text-center p-4 border rounded-lg">
                         <p className="text-sm text-muted-foreground">Efectivo Esperado</p>
                         <p className="text-2xl font-bold text-blue-600">
-                          S/ {((current.montoInicial || 0) + (summary.totalVentas || 0) - (summary.totalGastos || 0)).toFixed(2)}
+                          S/ {((current.openedAt || 0) + (summary.totalVentas || 0) - (summary.totalGastos || 0)).toFixed(2)}
                         </p>
                       </div>
                       <div className="text-center p-4 border rounded-lg">
@@ -326,13 +339,13 @@ export default function Caja() {
               )}
 
               {/* Observaciones */}
-              {current.observaciones && (
+              {current.notes && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Observaciones de Apertura</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground">{current.observaciones}</p>
+                    <p className="text-muted-foreground">{current.notes}</p>
                   </CardContent>
                 </Card>
               )}
@@ -364,25 +377,25 @@ export default function Caja() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {history.length > 0 ? (
+                {Array.isArray(history) && history.length > 0 ? (
                   history.map((cashRegister) => (
                     <div key={cashRegister.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center gap-4">
-                        <div className={`h-3 w-3 rounded-full ${cashRegister.estado === 'ABIERTA' ? 'bg-green-500' : 'bg-gray-500'}`} />
+                        <div className={`h-3 w-3 rounded-full ${cashRegister.status === 'ABIERTA' ? 'bg-green-500' : 'bg-gray-500'}`} />
                         <div>
                           <p className="font-semibold">
-                            {new Date(cashRegister.fechaApertura || '').toLocaleDateString('es-PE')}
+                            {new Date(cashRegister.openedAt || '').toLocaleDateString('es-PE')}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            {cashRegister.cajero} • {cashRegister.estado}
+                            {cashRegister.cashier} • {cashRegister.status}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold">S/ {cashRegister.montoInicial?.toFixed(2)}</p>
-                        {cashRegister.montoFinal && (
+                        <p className="font-semibold">S/ {cashRegister.initialCash?.toFixed(2)}</p>
+                        {cashRegister.finalCash && (
                           <p className="text-sm text-muted-foreground">
-                            Final: S/ {cashRegister.montoFinal.toFixed(2)}
+                            Final: S/ {cashRegister.finalCash.toFixed(2)}
                           </p>
                         )}
                       </div>
@@ -508,7 +521,7 @@ export default function Caja() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
-                          {statistics.productosMasVendidos.slice(0, 10).map((producto: any, index: number) => (
+                          {statistics.productosMasVendidos.slice(0, 10).map((producto, index: number) => (
                             <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
                               <div>
                                 <p className="font-medium">{producto.nombre}</p>
@@ -542,18 +555,18 @@ export default function Caja() {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span>Total de Cajas Registradas:</span>
-                      <span className="font-semibold">{history.length}</span>
+                      <span className="font-semibold">{Array.isArray(history) ? history.length : 0}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Cajas Abiertas:</span>
                       <span className="font-semibold text-green-600">
-                        {history.filter(c => c.estado === 'ABIERTA').length}
+                        {Array.isArray(history) ? history.filter(c => c.status === 'ABIERTA').length : 0}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Cajas Cerradas:</span>
                       <span className="font-semibold text-gray-600">
-                        {history.filter(c => c.estado === 'CERRADA').length}
+                        {Array.isArray(history) ? history.filter(c => c.status === 'CERRADA').length : 0}
                       </span>
                     </div>
                   </div>
@@ -564,8 +577,8 @@ export default function Caja() {
                     <div className="flex justify-between">
                       <span>Monto Inicial Promedio:</span>
                       <span className="font-semibold">
-                        S/ {history.length > 0 
-                          ? (history.reduce((sum, c) => sum + (c.montoInicial || 0), 0) / history.length).toFixed(2)
+                        S/ {Array.isArray(history) && history.length > 0 
+                          ? (history.reduce((sum, c) => sum + (c.initialCash || 0), 0) / history.length).toFixed(2)
                           : '0.00'
                         }
                       </span>
@@ -573,8 +586,8 @@ export default function Caja() {
                     <div className="flex justify-between">
                       <span>Monto Final Promedio:</span>
                       <span className="font-semibold">
-                        S/ {history.filter(c => c.montoFinal).length > 0
-                          ? (history.reduce((sum, c) => sum + (c.montoFinal || 0), 0) / history.filter(c => c.montoFinal).length).toFixed(2)
+                        S/ {Array.isArray(history) && history.filter(c => c.finalCash).length > 0
+                          ? (history.reduce((sum, c) => sum + (c.finalCash || 0), 0) / history.filter(c => c.finalCash).length).toFixed(2)
                           : '0.00'
                         }
                       </span>

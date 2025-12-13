@@ -808,9 +808,11 @@ export default function Productos() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todos">Todos</SelectItem>
-                      <SelectItem value="entrada">Entradas</SelectItem>
-                      <SelectItem value="salida">Salidas</SelectItem>
-                      <SelectItem value="ajuste">Ajustes</SelectItem>
+                      <SelectItem value="ENTRADA">Entradas</SelectItem>
+                      <SelectItem value="SALIDA">Salidas</SelectItem>
+                      <SelectItem value="AJUSTE">Ajustes</SelectItem>
+                      <SelectItem value="VENTA">Ventas</SelectItem>
+                      <SelectItem value="DEVOLUCION">Devoluciones</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

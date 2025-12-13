@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +25,6 @@ const EXPENSE_CATEGORIES = [
 const PAYMENT_METHODS = [
   'EFECTIVO',
   'TARJETA',
-  'TRANSFERENCIA',
   'YAPE',
   'PLIN'
 ];
@@ -46,13 +42,13 @@ export default function Gastos() {
   const [dateTo, setDateTo] = useState('');
 
   const [formData, setFormData] = useState({
-    descripcion: '',
-    monto: 0,
-    categoria: '',
-    metodoPago: '',
-    proveedor: '',
-    numeroComprobante: '',
-    comprobante: ''
+    description: '',
+    amount: 0,
+    category: '',
+    paymentMethod: '',
+    provider: '',
+    receiptNumber: '',
+    receipt: ''
   });
 
   useEffect(() => {
@@ -62,18 +58,23 @@ export default function Gastos() {
   const loadData = async () => {
     try {
       setIsLoading(true);
+      
+      // Ahora los servicios ya retornan arrays garantizados
       const [allExpenses, todayData, categoriesData] = await Promise.all([
         expensesService.getAll(),
         expensesService.getToday(),
-        expensesService.getCategories().catch(() => EXPENSE_CATEGORIES) // Fallback a categorías predefinidas
+        expensesService.getCategories()
       ]);
       
       setExpenses(allExpenses);
       setTodayExpenses(todayData);
       setCategories(categoriesData);
     } catch (error) {
-      console.error('Error loading expenses:', error);
-      toast.error('Error al cargar gastos');
+      console.error('Unexpected error loading expenses:', error);
+      // Los servicios ya manejan los errores y retornan valores por defecto
+      setExpenses([]);
+      setTodayExpenses([]);
+      setCategories(EXPENSE_CATEGORIES);
     } finally {
       setIsLoading(false);
     }
@@ -82,17 +83,28 @@ export default function Gastos() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.descripcion || !formData.monto || !formData.categoria || !formData.metodoPago) {
+    if (!formData.description || !formData.amount || !formData.category || !formData.paymentMethod) {
       toast.error('Por favor completa todos los campos requeridos');
       return;
     }
 
     try {
+      const expenseData = {
+        date: new Date().toISOString().split('T')[0],
+        description: formData.description,
+        amount: formData.amount,
+        category: formData.category,
+        paymentMethod: formData.paymentMethod as 'EFECTIVO' | 'TARJETA' | 'YAPE' | 'PLIN',
+        provider: formData.provider,
+        receiptNumber: formData.receiptNumber,
+        receipt: formData.receipt
+      };
+
       if (editingExpense) {
-        await expensesService.update(editingExpense.id, formData);
+        await expensesService.update(editingExpense.id, expenseData);
         toast.success('Gasto actualizado correctamente');
       } else {
-        await expensesService.create(formData);
+        await expensesService.create(expenseData);
         toast.success('Gasto registrado correctamente');
       }
       
@@ -121,13 +133,13 @@ export default function Gastos() {
   const openEditDialog = (expense: Expense) => {
     setEditingExpense(expense);
     setFormData({
-      descripcion: expense.descripcion || '',
-      monto: expense.monto || 0,
-      categoria: expense.categoria || '',
-      metodoPago: expense.metodoPago || '',
-      proveedor: expense.proveedor || '',
-      numeroComprobante: expense.numeroComprobante || '',
-      comprobante: expense.comprobante || ''
+      description: expense.description || '',
+      amount: expense.amount || 0,
+      category: expense.category || '',
+      paymentMethod: expense.paymentMethod || '',
+      provider: expense.provider || '',
+      receiptNumber: expense.receiptNumber || '',
+      receipt: expense.receipt || ''
     });
     setIsDialogOpen(true);
   };
@@ -135,25 +147,26 @@ export default function Gastos() {
   const resetForm = () => {
     setEditingExpense(null);
     setFormData({
-      descripcion: '',
-      monto: 0,
-      categoria: '',
-      metodoPago: '',
-      proveedor: '',
-      numeroComprobante: '',
-      comprobante: ''
+      description: '',
+      amount: 0,
+      category: '',
+      paymentMethod: '',
+      provider: '',
+      receiptNumber: '',
+      receipt: ''
     });
   };
 
+  // Datos están garantizados como arrays por los servicios
   const filteredExpenses = expenses.filter(expense => {
-    const matchesSearch = expense.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         expense.proveedor?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'todos' || expense.categoria === selectedCategory;
+    const matchesSearch = expense.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         expense.provider?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'todos' || expense.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const totalExpenses = expenses.reduce((sum, e) => sum + (e.monto || 0), 0);
-  const todayTotal = todayExpenses.reduce((sum, e) => sum + (e.monto || 0), 0);
+  const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const todayTotal = todayExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -182,23 +195,23 @@ export default function Gastos() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="descripcion">Descripción *</Label>
+                  <Label htmlFor="description">Descripción *</Label>
                   <Input
-                    id="descripcion"
-                    value={formData.descripcion}
-                    onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Descripción del gasto"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="monto">Monto S/ *</Label>
+                  <Label htmlFor="amount">Monto S/ *</Label>
                   <Input
-                    id="monto"
+                    id="amount"
                     type="number"
                     step="0.01"
-                    value={formData.monto || ''}
-                    onChange={(e) => setFormData({ ...formData, monto: parseFloat(e.target.value) || 0 })}
+                    value={formData.amount || ''}
+                    onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
                     placeholder="0.00"
                     required
                   />
@@ -207,7 +220,7 @@ export default function Gastos() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Categoría *</Label>
-                  <Select value={formData.categoria} onValueChange={(value) => setFormData({ ...formData, categoria: value })}>
+                  <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar categoría" />
                     </SelectTrigger>
@@ -220,7 +233,7 @@ export default function Gastos() {
                 </div>
                 <div className="space-y-2">
                   <Label>Método de Pago *</Label>
-                  <Select value={formData.metodoPago} onValueChange={(value) => setFormData({ ...formData, metodoPago: value })}>
+                  <Select value={formData.paymentMethod} onValueChange={(value) => setFormData({ ...formData, paymentMethod: value })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar método" />
                     </SelectTrigger>
@@ -234,30 +247,30 @@ export default function Gastos() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="proveedor">Proveedor</Label>
+                  <Label htmlFor="provider">Proveedor</Label>
                   <Input
-                    id="proveedor"
-                    value={formData.proveedor}
-                    onChange={(e) => setFormData({ ...formData, proveedor: e.target.value })}
+                    id="provider"
+                    value={formData.provider}
+                    onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
                     placeholder="Nombre del proveedor"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="numeroComprobante">N° Comprobante</Label>
+                  <Label htmlFor="receiptNumber">N° Comprobante</Label>
                   <Input
-                    id="numeroComprobante"
-                    value={formData.numeroComprobante}
-                    onChange={(e) => setFormData({ ...formData, numeroComprobante: e.target.value })}
+                    id="receiptNumber"
+                    value={formData.receiptNumber}
+                    onChange={(e) => setFormData({ ...formData, receiptNumber: e.target.value })}
                     placeholder="F001-00001234"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="comprobante">URL Comprobante</Label>
+                <Label htmlFor="receipt">URL Comprobante</Label>
                 <Input
-                  id="comprobante"
-                  value={formData.comprobante}
-                  onChange={(e) => setFormData({ ...formData, comprobante: e.target.value })}
+                  id="receipt"
+                  value={formData.receipt}
+                  onChange={(e) => setFormData({ ...formData, receipt: e.target.value })}
                   placeholder="https://ejemplo.com/comprobante.pdf"
                 />
               </div>
@@ -349,15 +362,15 @@ export default function Gastos() {
                     <div className="flex items-center gap-3">
                       <Receipt className="h-5 w-5 text-primary" />
                       <div>
-                        <p className="font-semibold">{expense.descripcion}</p>
+                        <p className="font-semibold">{expense.description}</p>
                         <p className="text-sm text-muted-foreground">
-                          {expense.categoria} • {new Date(expense.fechaCreacion || '').toLocaleDateString('es-PE')}
+                          {expense.category} • {new Date(expense.creationDate || '').toLocaleDateString('es-PE')}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-destructive">S/ {expense.monto?.toFixed(2)}</p>
-                      <Badge variant="outline">{expense.metodoPago}</Badge>
+                      <p className="font-bold text-destructive">S/ {expense.amount?.toFixed(2)}</p>
+                      <Badge variant="outline">{expense.paymentMethod}</Badge>
                     </div>
                   </div>
                 ))}
@@ -440,20 +453,20 @@ export default function Gastos() {
                       <div className="flex items-center gap-3">
                         <Receipt className="h-5 w-5 text-primary" />
                         <div>
-                          <p className="font-semibold text-lg">{expense.descripcion}</p>
+                          <p className="font-semibold text-lg">{expense.description}</p>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span>{new Date(expense.fechaCreacion || '').toLocaleString('es-PE')}</span>
-                            <Badge variant="outline">{expense.categoria}</Badge>
-                            <Badge variant="secondary">{expense.metodoPago}</Badge>
-                            {expense.proveedor && <span>• {expense.proveedor}</span>}
+                            <span>{new Date(expense.creationDate || '').toLocaleString('es-PE')}</span>
+                            <Badge variant="outline">{expense.category}</Badge>
+                            <Badge variant="secondary">{expense.paymentMethod}</Badge>
+                            {expense.provider && <span>• {expense.provider}</span>}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="text-right mr-4">
-                          <p className="text-2xl font-bold text-destructive">S/ {expense.monto?.toFixed(2)}</p>
-                          {expense.numeroComprobante && (
-                            <p className="text-sm text-muted-foreground">{expense.numeroComprobante}</p>
+                          <p className="text-2xl font-bold text-destructive">S/ {expense.amount?.toFixed(2)}</p>
+                          {expense.voucherNumber && (
+                            <p className="text-sm text-muted-foreground">{expense.voucherNumber}</p>
                           )}
                         </div>
                         <Button size="icon" variant="ghost" onClick={() => openEditDialog(expense)}>
@@ -489,8 +502,8 @@ export default function Gastos() {
             <CardContent>
               <div className="space-y-4">
                 {EXPENSE_CATEGORIES.map((category) => {
-                  const categoryExpenses = expenses.filter(e => e.categoria === category);
-                  const categoryTotal = categoryExpenses.reduce((sum, e) => sum + (e.monto || 0), 0);
+                  const categoryExpenses = expenses.filter(e => e.category === category);
+                  const categoryTotal = categoryExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
                   const percentage = totalExpenses > 0 ? (categoryTotal / totalExpenses) * 100 : 0;
                   
                   return (

@@ -155,7 +155,7 @@ export interface CashRegister {
   finalCash?: number;
   totalSales: number;
   totalExpenses: number;
-  status: 'open' | 'closed';
+  status: 'ABIERTA' | 'CERRADA';
   notes?: string;
   paymentBreakdown: {
     efectivo: number;
@@ -174,6 +174,11 @@ export interface Expense {
   paymentMethod: PaymentMethod;
   cashier?: string;
   notes?: string;
+  provider?: string;
+  receiptNumber?: string;
+  receipt?: string;
+  creationDate?: string;
+  voucherNumber?: string
 }
 
 export interface DeliveryOrder {
