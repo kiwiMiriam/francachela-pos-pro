@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useProducts, useProductSearch, useClients, useClientSearch } from '@/hooks';
+import { useProducts, useClients, productKeys, clientKeys } from '@/hooks';
 import type { Product, Client, PaymentMethod } from '@/types';
 import { PAYMENT_METHODS, PAYMENT_METHOD_OPTIONS } from '@/constants/paymentMethods';
 import { usePOS } from '@/contexts/POSContext';
@@ -30,9 +31,12 @@ export default function POS() {
   
   const PRODUCTS_PER_PAGE = 9;
 
+  // Query client para invalidar caché
+  const queryClient = useQueryClient();
+
   // Usar los nuevos hooks - cargar TODO sin parámetros de búsqueda
-  const { data: products = [], isLoading: productsLoading, error: productsError } = useProducts();
-  const { data: clients = [], isLoading: clientsLoading } = useClients();
+  const { data: products = [], isLoading: productsLoading, error: productsError, refetch: refetchProducts } = useProducts();
+  const { data: clients = [], isLoading: clientsLoading, refetch: refetchClients } = useClients();
   
   const {
     tickets,
@@ -181,13 +185,14 @@ export default function POS() {
     
     await completeSale(selectedPaymentMethod, 'Sistema', montoRecibido);
     
+    // Refrescar datos de productos y clientes después de la venta
+    queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+    queryClient.invalidateQueries({ queryKey: clientKeys.lists() });
+    refetchProducts();
+    refetchClients();
+    
     // Obtener el cliente actualizado para obtener los puntos actualizados
     const client = clients.find(c => c.id === currentClientId);
-    
-    // Enviar WhatsApp si hay cliente (siempre enviar)
-    // if (client && client.telefono) {
-    //   sendWhatsAppMessage(client.telefono, pointsEarned, total);
-    // }
     
     toast({
       title: 'Venta completada',
