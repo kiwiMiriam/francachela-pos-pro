@@ -10,6 +10,27 @@ import type {
   ExpenseCategory
 } from '@/types/api';
 
+// Mapear gastos del backend al formato frontend
+const mapExpenseFromBackend = (expense: any): Expense => ({
+  id: expense.id,
+  date: expense.fecha || expense.date,
+  description: expense.descripcion || expense.description,
+  amount: parseFloat(expense.monto || expense.amount || 0),
+  category: expense.categoria || expense.category,
+  cashier: expense.cajero || expense.cashier,
+  paymentMethod: expense.metodoPago || expense.paymentMethod,
+  provider: expense.proveedor || expense.provider,
+  receiptNumber: expense.numeroComprobante || expense.receiptNumber,
+  receipt: expense.comprobante || expense.receipt,
+  notes: expense.observaciones || expense.notes,
+  creationDate: expense.fechaCreacion || expense.creationDate,
+});
+
+const mapExpensesFromBackend = (expenses: any[]): Expense[] => {
+  if (!Array.isArray(expenses)) return [];
+  return expenses.map(mapExpenseFromBackend);
+};
+
 export const expensesService = {
   /**
    * Obtener todos los gastos
@@ -42,9 +63,14 @@ export const expensesService = {
       if (params?.limit) queryParams.append('limit', params.limit.toString());
       
       const url = `${API_ENDPOINTS.EXPENSES.BASE}${queryParams.toString() ? `?${queryParams}` : ''}`;
-      const result = await httpClient.get<Expense[]>(url);
-      // Asegurar que siempre retorna un array
-      return ensureArray(result, []);
+      const result = await httpClient.get<any>(url);
+      
+      // El endpoint puede retornar { data: [], total, page, ... } o un array directo
+      if (result && result.data) {
+        return mapExpensesFromBackend(result.data);
+      }
+      
+      return mapExpensesFromBackend(ensureArray(result, []));
     } catch (error) {
       console.error('Error getting expenses:', error);
       // Retornar array vacío en lugar de lanzar error
@@ -76,6 +102,7 @@ export const expensesService = {
 
   /**
    * Obtener gastos del día actual
+   * Response format: { gastos: [], totalGastos: number, totalMonto: number }
    */
   getToday: async (): Promise<Expense[]> => {
     try {
@@ -90,12 +117,17 @@ export const expensesService = {
         );
       }
       
-      const result = await httpClient.get<Expense[]>(API_ENDPOINTS.EXPENSES.TODAY);
-      // Asegurar que siempre retorna un array
+      const result = await httpClient.get<any>(API_ENDPOINTS.EXPENSES.TODAY);
+      
+      // El endpoint retorna { gastos: [], totalGastos: number, totalMonto: number }
+      if (result && result.gastos) {
+        return mapExpensesFromBackend(result.gastos);
+      }
+      
+      // Fallback si es un array directo
       return ensureArray(result, []);
     } catch (error) {
       console.error('Error getting today expenses:', error);
-      // Retornar array vacío en lugar de lanzar error
       return [];
     }
   },

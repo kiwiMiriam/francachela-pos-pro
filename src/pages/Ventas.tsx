@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { TrendingUp, Calendar, User, CreditCard, Download, Eye, XCircle } from "lucide-react";
+import { TrendingUp, Calendar, User, CreditCard, Download, Eye, XCircle, Ban, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { salesAPI } from "@/services/api";
 import type { Sale } from "@/types";
@@ -63,11 +63,36 @@ export default function Ventas() {
     if (!confirm('¿Estás seguro de anular esta venta?')) return;
 
     try {
-      await salesAPI.cancel(id);
+      // Obtener token de autenticación
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        toast.error('No hay sesión activa');
+        return;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/ventas/${id}/anular`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast.error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+          return;
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Error al anular venta');
+      }
+
       toast.success('Venta anulada correctamente');
       loadVentas();
     } catch (error) {
-      toast.error('Error al anular venta');
+      console.error('Error canceling sale:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al anular venta';
+      toast.error(errorMessage);
     }
   };
 
@@ -76,39 +101,53 @@ export default function Ventas() {
     setIsDetailDialogOpen(true);
   };
 
-  const exportToCSV = () => {
-    if (filteredVentas.length === 0) {
-      toast.error('No hay ventas para exportar');
-      return;
+  const exportToExcel = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        toast.error('No hay sesión activa');
+        return;
+      }
+
+      // Construir URL con parámetros de fecha
+      const params = new URLSearchParams();
+      if (dateFilter.startDate) params.append('fechaInicio', dateFilter.startDate);
+      if (dateFilter.endDate) params.append('fechaFin', dateFilter.endDate);
+      params.append('tipoReporte', 'VENTAS');
+      params.append('incluirDetalles', 'false');
+
+      const url = `${import.meta.env.VITE_API_BASE_URL}/excel/export-ventas?${params.toString()}`;
+      
+      toast.loading('Generando archivo Excel...');
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al exportar ventas');
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `ventas_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+
+      toast.dismiss();
+      toast.success('Ventas exportadas correctamente');
+    } catch (error) {
+      toast.dismiss();
+      console.error('Error exporting sales:', error);
+      toast.error('Error al exportar ventas');
     }
-
-    const headers = ['ID', 'Fecha', 'Cliente', 'Total', 'Método Pago', 'Cajero', 'Estado'];
-    const rows = filteredVentas.map(v => [
-      v.ticketId,
-      new Date(v.fecha).toLocaleString(),
-      v.cliente?.nombres + ' ' + v.cliente?.apellidos || 'Venta Rápida',
-      v.total.toFixed(2),
-      v.metodoPago,
-      v.cajero,
-      v.estado,
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `ventas_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    toast.success('Ventas exportadas correctamente');
   };
 
   if (isLoading) {
@@ -123,9 +162,9 @@ export default function Ventas() {
           <p className="text-muted-foreground">Registro detallado de todas las transacciones</p>
         </div>
         
-        <Button onClick={exportToCSV} className="w-full sm:w-auto">
-          <Download className="h-4 w-4 mr-2" />
-          Exportar CSV
+        <Button onClick={exportToExcel} className="w-full sm:w-auto">
+          <FileSpreadsheet className="h-4 w-4 mr-2" />
+          Exportar Excel
         </Button>
       </div>
 
