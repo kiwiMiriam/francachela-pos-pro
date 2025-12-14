@@ -219,7 +219,16 @@ export function POSProvider({ children }: { children: React.ReactNode }) {
   );
 
   const completeSale = useCallback(
-    async (paymentMethod: PaymentMethod, cashierName: string, montoRecibido: number = 0) => {
+    async (
+      paymentMethod: PaymentMethod, 
+      cashierName: string, 
+      montoRecibido: number = 0,
+      metodosPageoUsados?: Array<{
+        monto: number;
+        metodoPago: PaymentMethod;
+        referencia?: string;
+      }>
+    ) => {
       const ticket = getActiveTicket();
       
       if (!ticket || ticket.items.length === 0) {
@@ -251,11 +260,20 @@ export function POSProvider({ children }: { children: React.ReactNode }) {
             cantidad: item.cantidad,
           })),
           descuento: ticket.discount || 0,
-          metodoPago: paymentMethod,
+          metodoPago: paymentMethod, // Método principal para compatibilidad
           comentario: ticket.notes || '',
           tipoCompra: 'LOCAL',
           montoRecibido: montoRecibido || 0,
           puntosUsados: 0,
+          // Agregar múltiples métodos de pago si están disponibles
+          ...(metodosPageoUsados && metodosPageoUsados.length > 0 && {
+            metodosPageoUsados: metodosPageoUsados.map(metodo => ({
+              monto: metodo.monto,
+              metodoPago: metodo.metodoPago,
+              timestamp: new Date().toISOString(),
+              ...(metodo.referencia && { referencia: metodo.referencia })
+            }))
+          })
         };
         
         console.log('[POSContext] Payload de venta:', saleData);
@@ -264,17 +282,8 @@ export function POSProvider({ children }: { children: React.ReactNode }) {
         
         console.log('[POSContext] Venta creada:', sale);
         
-        // Si hay cliente, actualizar sus puntos
-        if (ticket.clientId && puntosOtorgados > 0) {
-          try {
-            const cliente = await clientsService.getById(ticket.clientId);
-            await clientsService.update(ticket.clientId, {
-              puntosAcumulados: cliente.puntosAcumulados + puntosOtorgados
-            });
-          } catch (error) {
-            console.error('Error updating client points:', error);
-          }
-        }
+        // NOTA: Los puntos del cliente se actualizan automáticamente en el backend
+        // al crear la venta, por lo que no necesitamos hacer PATCH '/clientes/id' aquí
         
         toast.success('Venta completada exitosamente');
         
