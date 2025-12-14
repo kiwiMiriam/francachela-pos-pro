@@ -34,7 +34,16 @@ interface POSContextType {
   applyDiscount: (discount: number) => void;
   getActiveTicket: () => Ticket | undefined;
   getTicketTotal: (ticketId?: string) => number;
-  completeSale: (paymentMethod: PaymentMethod, cashierName: string, montoRecibido?: number) => Promise<void>;
+  completeSale: (
+    paymentMethod: PaymentMethod,
+    cashierName: string,
+    montoRecibido?: number,
+    metodosPageoUsados?: Array<{
+      monto: number;
+      metodoPago: PaymentMethod;
+      referencia?: string;
+    }>
+  ) => Promise<void>;
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined);

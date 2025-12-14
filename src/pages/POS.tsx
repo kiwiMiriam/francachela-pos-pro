@@ -551,7 +551,7 @@ export default function POS() {
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                    <div className="grid grid-cols-3 gap-4 p-2 bg-muted/50 rounded-lg">
                       <div>
                         <div className="text-sm text-muted-foreground">Subtotal</div>
                         <div className="font-medium">S/ {(total + (activeTicket?.discount || 0)).toFixed(2)}</div>
@@ -589,11 +589,11 @@ export default function POS() {
                     </div>
 
                     {/* Sección de Múltiples Métodos de Pago */}
-                    <div className="space-y-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="space-y-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
                       <div className="font-medium text-sm text-blue-800">Múltiples Métodos de Pago</div>
                       
                       {/* Agregar método de pago */}
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-1">
                         <div>
                           <Label htmlFor="montoActual" className="text-xs">Monto</Label>
                           <Input
@@ -607,19 +607,8 @@ export default function POS() {
                             className="text-sm"
                           />
                         </div>
-                        <div>
-                          <Label className="text-xs">Referencia (opcional)</Label>
-                          <Input
-                            type="text"
-                            value={referenciaActual}
-                            onChange={(e) => setReferenciaActual(e.target.value)}
-                            placeholder="Ej: TXN-123456"
-                            className="text-sm"
-                          />
-                        </div>
-                      </div>
-                      
-                      <Button 
+                        
+                        <Button 
                         onClick={agregarMetodoPago} 
                         variant="outline" 
                         size="sm" 
@@ -628,13 +617,16 @@ export default function POS() {
                       >
                         Agregar {selectedPaymentMethod} - S/ {montoActual.toFixed(2)}
                       </Button>
+                      </div>
+                      
+                      
 
                       {/* Lista de métodos agregados */}
                       {metodosPageoUsados.length > 0 && (
                         <div className="space-y-2">
                           <div className="text-xs font-medium text-blue-700">Métodos agregados:</div>
                           {metodosPageoUsados.map((metodo, index) => (
-                            <div key={index} className="flex items-center justify-between p-2 bg-white rounded border">
+                            <div key={index} className="flex items-center justify-between p-1 bg-white rounded border">
                               <div className="flex-1">
                                 <div className="text-sm font-medium">{metodo.metodoPago}</div>
                                 <div className="text-xs text-muted-foreground">
@@ -675,7 +667,7 @@ export default function POS() {
                     </div>
 
                     {/* Sección de Cálculo de Vuelto */}
-                    <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
+                    <div className="space-y-2 p-2 bg-muted/50 rounded-lg">
                       <div className="font-medium text-sm">Cálculo de Vuelto</div>
                       <div className="space-y-2">
                         <div>
@@ -704,7 +696,7 @@ export default function POS() {
                                   <span className="text-muted-foreground">Monto recibido:</span>
                                   <span className="font-medium">S/ {montoRecibido.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between text-sm border-t pt-2">
+                                <div className="flex justify-between text-sm border-t pt-1">
                                   <span className="font-medium">Vuelto:</span>
                                   <span className="text-lg font-bold text-primary">S/ {(montoRecibido - total).toFixed(2)}</span>
                                 </div>
