@@ -589,8 +589,8 @@ export default function POS() {
                     </div>
 
                     {/* Sección de Múltiples Métodos de Pago */}
-                    <div className="space-y-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="font-medium text-sm text-blue-800">Múltiples Métodos de Pago</div>
+                    <div className="space-y-2 p-2 bg-purple-50 rounded-lg border border-purple-200">
+                      <div className="font-medium text-sm text-purple-700">Múltiples Métodos de Pago</div>
                       
                       {/* Agregar método de pago */}
                       <div className="grid grid-cols-2 gap-1">
