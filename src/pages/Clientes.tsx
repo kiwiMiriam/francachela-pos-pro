@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Users, Star, Plus, Pencil, Trash2, Search, AlertCircle, Check, Calendar, MessageCircle } from "lucide-react";
+import { Users, Star, Plus, Pencil, Trash2, Search, AlertCircle, Check, Calendar, MessageCircle, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from "@/hooks";
 import { clientsService } from '@/services/clientsService';
@@ -324,6 +324,48 @@ export default function Clientes() {
     );
   });
 
+  const exportToExcel = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        toast.error('No hay sesión activa');
+        return;
+      }
+
+      const url = `${import.meta.env.VITE_API_BASE_URL}/excel/export-clientes`;
+      
+      toast.loading('Generando archivo Excel...');
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al exportar clientes');
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `clientes_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+
+      toast.dismiss();
+      toast.success('Clientes exportados correctamente');
+    } catch (error) {
+      toast.dismiss();
+      console.error('Error exporting clients:', error);
+      toast.error('Error al exportar clientes');
+    }
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-64">Cargando clientes...</div>;
   }
@@ -336,24 +378,29 @@ export default function Clientes() {
           <p className="text-muted-foreground">Administra tus clientes y sus puntos de fidelidad</p>
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Cliente
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingClient ? 'Editar Cliente' : 'Nuevo Cliente'}</DialogTitle>
-              <DialogDescription>
-                {editingClient ? 'Actualiza la información del cliente' : 'Completa los datos del nuevo cliente'}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button onClick={exportToExcel} variant="outline" className="flex-1 sm:flex-none">
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Exportar Excel
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogTrigger asChild>
+              <Button className="flex-1 sm:flex-none">
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Cliente
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{editingClient ? 'Editar Cliente' : 'Nuevo Cliente'}</DialogTitle>
+                <DialogDescription>
+                  {editingClient ? 'Actualiza la información del cliente' : 'Completa los datos del nuevo cliente'}
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">Nombres *</Label>
                 <Input
@@ -503,6 +550,7 @@ export default function Clientes() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="relative">

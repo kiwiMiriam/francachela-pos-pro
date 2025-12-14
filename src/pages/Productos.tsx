@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Plus, Pencil, Trash2, Search, ArrowUpDown, AlertCircle, Check } from "lucide-react";
+import { Package, Plus, Pencil, Trash2, Search, ArrowUpDown, AlertCircle, Check, FileSpreadsheet, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from '@/hooks/useProducts';
 import { inventoryService } from '@/services/inventoryService';
@@ -249,13 +249,12 @@ export default function Productos() {
     
     try {
       await inventoryService.createMovement({
-        TIPO: movementData.type,
-        PRODUCTO_ID: selectedProduct.id,
-        PRODUCTO_NOMBRE: selectedProduct.productoDescripcion,
-        CANTIDAD: movementData.quantity,
-        HORA: new Date().toISOString(),
-        DESCRIPCION: movementData.notes || `Movimiento de ${movementData.type}`,
-        CAJERO: 'Usuario', // TODO: obtener del contexto de auth
+        tipo: movementData.type,
+        id: selectedProduct.id,
+        descripcion: movementData.notes || `Movimiento de ${movementData.type}`,
+        cantidad: movementData.quantity,
+        hora: new Date().toISOString(),
+        cajero: 'Usuario', // TODO: obtener del contexto de auth
       });
       
       // Actualizar stock del producto
@@ -358,6 +357,89 @@ export default function Productos() {
     );
   });
 
+  const exportProductsToExcel = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        toast.error('No hay sesión activa');
+        return;
+      }
+
+      toast.loading('Generando archivo Excel...');
+      
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/excel/export-productos`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error('Error al exportar productos');
+
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `productos_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+
+      toast.dismiss();
+      toast.success('Productos exportados correctamente');
+    } catch (error) {
+      toast.dismiss();
+      console.error('Error exporting products:', error);
+      toast.error('Error al exportar productos');
+    }
+  };
+
+  const exportMovementsToExcel = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        toast.error('No hay sesión activa');
+        return;
+      }
+
+      const today = new Date();
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+      const endOfDay = today.toISOString().split('T')[0];
+
+      const params = new URLSearchParams({
+        fechaInicio: startOfMonth,
+        fechaFin: endOfDay,
+        tipoReporte: 'INVENTARIO',
+        incluirDetalles: 'true'
+      });
+
+      toast.loading('Generando archivo Excel...');
+      
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/excel/export-inventario?${params}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error('Error al exportar movimientos');
+
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `movimientos_inventario_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+
+      toast.dismiss();
+      toast.success('Movimientos exportados correctamente');
+    } catch (error) {
+      toast.dismiss();
+      console.error('Error exporting movements:', error);
+      toast.error('Error al exportar movimientos');
+    }
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-64">Cargando productos...</div>;
   }
@@ -377,9 +459,14 @@ export default function Productos() {
               <p className="text-muted-foreground">Administra tu inventario de productos</p>
             </div>
             
-            <Dialog open={isDialogOpen} onOpenChange={(open) => {
-              setIsDialogOpen(open);
-              if (!open) resetForm();
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button onClick={exportProductsToExcel} variant="outline" size="sm">
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Exportar Excel
+              </Button>
+              <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) resetForm();
             }}>
               <DialogTrigger asChild>
                 <Button className="w-full sm:w-auto">
@@ -422,7 +509,7 @@ export default function Productos() {
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="barcode">Código de Barras (Opcional)</Label>
+                    <Label htmlFor="barcode">Código de Barras *</Label>
                     <div className="relative">
                       <Input
                         id="barcode"
@@ -701,6 +788,7 @@ export default function Productos() {
                 </form>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
           <div className="relative">
@@ -772,10 +860,24 @@ export default function Productos() {
               <p className="text-muted-foreground">Historial de entradas, salidas y ajustes</p>
             </div>
             <div className="flex gap-2">
+              <Button onClick={exportMovementsToExcel} variant="outline" size="sm">
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Exportar Excel
+              </Button>
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => loadMovements()}
+                onClick={async () => {
+                  setIsLoadingMovements(true);
+                  try {
+                    const data = await inventoryService.getMovements();
+                    setMovimientos(data);
+                  } catch (error) {
+                    console.error('Error loading movements:', error);
+                  } finally {
+                    setIsLoadingMovements(false);
+                  }
+                }}
                 disabled={isLoadingMovements}
               >
                 Actualizar
@@ -842,7 +944,7 @@ export default function Productos() {
                     <p className="text-2xl font-bold text-primary">
                       {movimientos.filter(m => {
                         const today = new Date().toDateString();
-                        return new Date(m.HORA).toDateString() === today;
+                        return new Date(m.hora).toDateString() === today;
                       }).length}
                     </p>
                   </div>
@@ -858,7 +960,7 @@ export default function Productos() {
                   <div>
                     <p className="text-sm text-muted-foreground">Entradas</p>
                     <p className="text-2xl font-bold text-green-600">
-                      {movimientos.filter(m => m.TIPO === 'entrada').length}
+                      {movimientos.filter(m => m.tipo === 'entrada').length}
                     </p>
                   </div>
                   <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -873,7 +975,7 @@ export default function Productos() {
                   <div>
                     <p className="text-sm text-muted-foreground">Salidas</p>
                     <p className="text-2xl font-bold text-red-600">
-                      {movimientos.filter(m => m.TIPO === 'salida').length}
+                      {movimientos.filter(m => m.tipo === 'salida').length}
                     </p>
                   </div>
                   <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">
@@ -899,31 +1001,33 @@ export default function Productos() {
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                       <div>
                         <p className="text-sm text-muted-foreground">Fecha/Hora</p>
-                        <p className="font-semibold text-sm">{new Date(mov.HORA).toLocaleString('es-PE')}</p>
+                        <p className="font-semibold text-sm">
+                          {mov.hora ? new Date(mov.hora).toLocaleString('es-PE') : 'N/A'}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Producto</p>
-                        <p className="font-semibold text-sm">{mov.PRODUCTO_NOMBRE || mov.DESCRIPCION}</p>
+                        <p className="font-semibold text-sm">{mov.descripcion || 'Sin especificar'}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Tipo</p>
-                        <Badge variant={mov.TIPO === 'entrada' ? 'default' : mov.TIPO === 'salida' ? 'destructive' : 'secondary'}>
-                          {mov.TIPO.toUpperCase()}
+                        <Badge variant={mov.tipo === 'entrada' ? 'default' : mov.tipo === 'salida' ? 'destructive' : 'secondary'}>
+                          {(mov.tipo || 'desconocido').toUpperCase()}
                         </Badge>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Cantidad</p>
-                        <p className={`font-semibold ${mov.TIPO === 'entrada' ? 'text-green-600' : mov.TIPO === 'salida' ? 'text-red-600' : 'text-blue-600'}`}>
-                          {mov.TIPO === 'entrada' ? '+' : mov.TIPO === 'salida' ? '-' : '±'}{mov.CANTIDAD}
+                        <p className={`font-semibold ${mov.tipo === 'entrada' ? 'text-green-600' : mov.tipo === 'salida' ? 'text-red-600' : 'text-blue-600'}`}>
+                          {mov.tipo === 'entrada' ? '+' : mov.tipo === 'salida' ? '-' : '±'}{mov.cantidad || 0}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Cajero</p>
-                        <p className="font-semibold text-sm">{mov.CAJERO}</p>
+                        <p className="font-semibold text-sm">{mov.cajero || 'N/A'}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Descripción</p>
-                        <p className="text-sm text-muted-foreground">{mov.DESCRIPCION || 'Sin descripción'}</p>
+                        <p className="text-sm text-muted-foreground">Código</p>
+                        <p className="text-sm text-muted-foreground">{mov.codigoBarra || 'Sin código'}</p>
                       </div>
                     </div>
                   </CardContent>
