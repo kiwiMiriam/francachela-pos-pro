@@ -123,15 +123,6 @@ export default function ClienteStats() {
     }
   };
 
-  const formatCurrency = (amount: number) => `S/${amount.toFixed(2)}`;
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-PE', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
   return (
     <Card className="w-full">
       <CardHeader>
