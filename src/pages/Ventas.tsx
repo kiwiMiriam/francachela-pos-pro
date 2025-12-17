@@ -154,7 +154,7 @@ export default function Ventas() {
         params.append('fechaFin', `${dateFilter.endDate} 23:59:59`);
       }
       params.append('tipoReporte', 'VENTAS');
-      params.append('incluirDetalles', 'false');
+      params.append('incluirDetalles', 'true');
 
       const url = `${import.meta.env.VITE_API_BASE_URL}/excel/export-ventas?${params.toString()}`;
       
