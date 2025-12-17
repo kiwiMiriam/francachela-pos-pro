@@ -137,6 +137,8 @@ export default function Ventas() {
   };
 
   const exportToExcel = async () => {
+    let loadingToastId: string | undefined;
+    
     try {
       const token = localStorage.getItem('auth_token');
       if (!token) {
@@ -159,7 +161,7 @@ export default function Ventas() {
 
       const url = `${import.meta.env.VITE_API_BASE_URL}/excel/export-ventas?${params.toString()}`;
       
-      const loadingToastId = showLoadingToast('Generando archivo Excel...');
+      loadingToastId = showLoadingToast('Generando archivo Excel...');
       
       const response = await fetch(url, {
         method: 'GET',
@@ -185,7 +187,9 @@ export default function Ventas() {
       dismissToast(loadingToastId);
       showSuccessToast('Ventas exportadas correctamente');
     } catch (error) {
-      dismissToast(loadingToastId);
+      if (loadingToastId) {
+        dismissToast(loadingToastId);
+      }
       console.error('Error exporting sales:', error);
       showErrorToast(error, 'Error al exportar ventas');
     }
