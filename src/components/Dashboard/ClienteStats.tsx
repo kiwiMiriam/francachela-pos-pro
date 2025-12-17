@@ -19,35 +19,41 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { clientsService } from '@/services/clientsService';
 import { showErrorToast, showLoadingToast, dismissToast, showSuccessToast } from '@/utils/errorHandler';
 
+interface Metricas {
+  totalCompras?: number;
+  montoTotalGastado?: number;
+  promedioCompra?: number;
+  puntosAcumulados?: number;
+  puntosCanjeados?: number;
+  fechaPrimeraCompra?: string;
+  fechaUltimaCompra?: string;
+}
+
+interface ComprasPorMes {
+  mes?: string;
+  cantidad?: number;
+  monto?: number;
+}
+
+interface ProductoFavorito {
+  productoId?: number;
+  descripcion?: string;
+  cantidadComprada?: number;
+  montoGastado?: number;
+}
+
 interface ClienteEstadisticas {
-  cliente: {
-    id: number;
-    nombre: string;
-    telefono: string;
+  cliente?: {
+    id?: number;
+    nombre?: string;
+    telefono?: string;
     email?: string;
-    puntos: number;
-    fechaRegistro: string;
+    puntos?: number;
+    fechaRegistro?: string;
   };
-  metricas: {
-    totalCompras: number;
-    montoTotalGastado: number;
-    promedioCompra: number;
-    puntosAcumulados: number;
-    puntosCanjeados: number;
-    fechaPrimeraCompra: string;
-    fechaUltimaCompra: string;
-  };
-  comprasPorMes: Array<{
-    mes: string;
-    cantidad: number;
-    monto: number;
-  }>;
-  productosFavoritos: Array<{
-    productoId: number;
-    descripcion: string;
-    cantidadComprada: number;
-    montoGastado: number;
-  }>;
+  metricas?: Metricas;
+  comprasPorMes?: ComprasPorMes[];
+  productosFavoritos?: ProductoFavorito[];
 }
 
 export default function ClienteStats() {
@@ -74,6 +80,10 @@ export default function ClienteStats() {
     
     try {
       const data = await clientsService.getEstadisticas(id);
+      // Validar estructura mínima de datos
+      if (!data || !data.cliente) {
+        throw new Error('Datos inválidos recibidos del servidor');
+      }
       setEstadisticas(data);
       showSuccessToast('Estadísticas cargadas correctamente');
     } catch (error) {
@@ -173,7 +183,7 @@ export default function ClienteStats() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-muted-foreground">Total Compras</p>
-                      <p className="text-lg font-bold">{estadisticas.metricas.totalCompras}</p>
+                      <p className="text-lg font-bold">{estadisticas?.metricas?.totalCompras ?? 0}</p>
                     </div>
                     <ShoppingCart className="h-4 w-4 text-blue-500" />
                   </div>
@@ -186,7 +196,7 @@ export default function ClienteStats() {
                     <div>
                       <p className="text-xs text-muted-foreground">Monto Total</p>
                       <p className="text-lg font-bold text-green-600">
-                        {formatCurrency(estadisticas.metricas.montoTotalGastado)}
+                        {formatCurrency(estadisticas?.metricas?.montoTotalGastado ?? 0)}
                       </p>
                     </div>
                     <DollarSign className="h-4 w-4 text-green-500" />
@@ -200,7 +210,7 @@ export default function ClienteStats() {
                     <div>
                       <p className="text-xs text-muted-foreground">Promedio/Compra</p>
                       <p className="text-lg font-bold text-orange-600">
-                        {formatCurrency(estadisticas.metricas.promedioCompra)}
+                        {formatCurrency(estadisticas?.metricas?.promedioCompra ?? 0)}
                       </p>
                     </div>
                     <TrendingUp className="h-4 w-4 text-orange-500" />
@@ -214,7 +224,7 @@ export default function ClienteStats() {
                     <div>
                       <p className="text-xs text-muted-foreground">Puntos Ganados</p>
                       <p className="text-lg font-bold text-purple-600">
-                        {estadisticas.metricas.puntosAcumulados}
+                        {estadisticas?.metricas?.puntosAcumulados ?? 0}
                       </p>
                     </div>
                     <Star className="h-4 w-4 text-purple-500" />
@@ -232,7 +242,9 @@ export default function ClienteStats() {
                     <div>
                       <p className="text-xs text-muted-foreground">Primera Compra</p>
                       <p className="text-sm font-medium">
-                        {formatDate(estadisticas.metricas.fechaPrimeraCompra)}
+                        {estadisticas?.metricas?.fechaPrimeraCompra 
+                          ? formatDate(estadisticas.metricas.fechaPrimeraCompra)
+                          : 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -246,7 +258,9 @@ export default function ClienteStats() {
                     <div>
                       <p className="text-xs text-muted-foreground">Última Compra</p>
                       <p className="text-sm font-medium">
-                        {formatDate(estadisticas.metricas.fechaUltimaCompra)}
+                        {estadisticas?.metricas?.fechaUltimaCompra
+                          ? formatDate(estadisticas.metricas.fechaUltimaCompra)
+                          : 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -261,9 +275,9 @@ export default function ClienteStats() {
                   <CardTitle className="text-sm">Compras por Mes</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {estadisticas.comprasPorMes.length > 0 ? (
+                  {(estadisticas?.comprasPorMes?.length ?? 0) > 0 ? (
                     <ResponsiveContainer width="100%" height={200}>
-                      <LineChart data={estadisticas.comprasPorMes}>
+                      <LineChart data={estadisticas.comprasPorMes!}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="mes" />
                         <YAxis />
@@ -293,9 +307,9 @@ export default function ClienteStats() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {estadisticas.productosFavoritos.length > 0 ? (
+                  {(estadisticas?.productosFavoritos?.length ?? 0) > 0 ? (
                     <div className="space-y-2">
-                      {estadisticas.productosFavoritos.slice(0, 5).map((producto, index) => (
+                      {estadisticas.productosFavoritos!.slice(0, 5).map((producto, index) => (
                         <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                           <div>
                             <p className="text-sm font-medium">
@@ -322,14 +336,14 @@ export default function ClienteStats() {
             </div>
 
             {/* Gráfico de monto gastado por mes */}
-            {estadisticas.comprasPorMes.length > 0 && (
+            {(estadisticas?.comprasPorMes?.length ?? 0) > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-sm">Monto Gastado por Mes</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={estadisticas.comprasPorMes}>
+                    <BarChart data={estadisticas.comprasPorMes!}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="mes" />
                       <YAxis />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,12 +22,33 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 export default function InventarioStats() {
   const [estadisticas, setEstadisticas] = useState<InventarioEstadisticas | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [dateRange, setDateRange] = useState({
-    fechaInicio: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 días atrás
-    fechaFin: new Date().toISOString().split('T')[0] // Hoy
+
+  // Interfaz para manejo consistente de fechas
+  interface DateRange {
+    fechaInicio: string;
+    fechaFin: string;
+  }
+
+  // Función auxiliar para obtener fechas del mes actual
+  const getMonthDates = (): DateRange => {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    const formatDateOnly = (date: Date) => date.toISOString().split('T')[0];
+    
+    return {
+      fechaInicio: formatDateOnly(firstDay),
+      fechaFin: formatDateOnly(lastDay)
+    };
+  };
+
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
+    // Inicializar con fechas del mes actual
+    return getMonthDates();
   });
 
-  const loadEstadisticas = async () => {
+  const loadEstadisticas = useCallback(async () => {
     setIsLoading(true);
     const loadingToastId = showLoadingToast('Cargando estadísticas de inventario...');
     
@@ -43,11 +64,12 @@ export default function InventarioStats() {
       dismissToast(loadingToastId);
       setIsLoading(false);
     }
-  };
+  }, [dateRange]);
 
   useEffect(() => {
     loadEstadisticas();
-  }, []);
+    // Agregar loadEstadisticas a las dependencias pero evitar loop infinito con useCallback
+  }, [dateRange]);
 
   const handleDateRangeChange = (field: 'fechaInicio' | 'fechaFin', value: string) => {
     setDateRange(prev => ({ ...prev, [field]: value }));
@@ -57,6 +79,10 @@ export default function InventarioStats() {
     const fechaFin = new Date().toISOString().split('T')[0];
     const fechaInicio = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     setDateRange({ fechaInicio, fechaFin });
+  };
+
+  const resetToCurrentMonth = () => {
+    setDateRange(getMonthDates());
   };
 
   // Preparar datos para gráficos
@@ -134,6 +160,7 @@ export default function InventarioStats() {
             <Button variant="outline" size="sm" onClick={() => setQuickRange(7)}>7d</Button>
             <Button variant="outline" size="sm" onClick={() => setQuickRange(30)}>30d</Button>
             <Button variant="outline" size="sm" onClick={() => setQuickRange(90)}>90d</Button>
+            <Button variant="outline" size="sm" onClick={resetToCurrentMonth} title="Mes Actual">Mes</Button>
           </div>
         </div>
       </CardHeader>

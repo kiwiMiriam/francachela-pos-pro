@@ -25,9 +25,10 @@ export const inventarioService = {
    */
   getEstadisticas: async (fechaInicio: string, fechaFin: string): Promise<InventarioEstadisticas> => {
     try {
+      // URLSearchParams maneja el encoding automáticamente
       const params = new URLSearchParams({
-        fechaInicio: encodeURIComponent(fechaInicio),
-        fechaFin: encodeURIComponent(fechaFin)
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin
       });
 
       const url = `/movimiento-inventario/estadisticas?${params.toString()}`;

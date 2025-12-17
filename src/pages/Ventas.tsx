@@ -137,7 +137,7 @@ export default function Ventas() {
   };
 
   const exportToExcel = async () => {
-    let loadingToastId: string | undefined;
+    let loadingToastId: string | number;
     
     try {
       const token = localStorage.getItem('auth_token');
