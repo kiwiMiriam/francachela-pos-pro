@@ -53,7 +53,11 @@ export default function Clientes() {
 
   // Validación en tiempo real del DNI
   const validateDni = useCallback(async (dni: string, excludeId?: number) => {
-    if (!dni || dni.length !== 8) {
+    // Validar que sea DNI (8 dígitos) o CE (1-10 dígitos)
+    const isDNI = /^\d{8}$/.test(dni);
+    const isCE = /^\d{1,10}$/.test(dni);
+    
+    if (!dni || (!isDNI && !isCE)) {
       setDniAvailable(null);
       return;
     }
@@ -80,7 +84,11 @@ export default function Clientes() {
   // Debounce para validación de DNI - solo validar si el DNI ha cambiado
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (formData.dni.length === 8) {
+      // Validar si es DNI (8 dígitos) o CE (1-10 dígitos)
+      const isDNI = /^\d{8}$/.test(formData.dni);
+      const isCE = /^\d{1,10}$/.test(formData.dni);
+      
+      if (isDNI || isCE) {
         // Si estamos editando y el DNI no ha cambiado, no validar
         if (editingClient && formData.dni === editingClient.dni) {
           setDniAvailable(true);
@@ -161,10 +169,14 @@ export default function Clientes() {
   };
 
   const isFormValid = () => {
+    // Validar DNI (8 dígitos) o CE (1-10 dígitos)
+    const isDNI = /^\d{8}$/.test(formData.dni);
+    const isCE = /^\d{1,10}$/.test(formData.dni);
+    
     const baseValid = (
       formData.firstName.trim().length >= 2 &&
       formData.lastName.trim().length >= 2 &&
-      /^\d{8}$/.test(formData.dni) &&
+      (isDNI || isCE) &&
       /^\d{9}$/.test(formData.phone) &&
       formData.birthday && validateBirthday(formData.birthday).isValid &&
       Object.keys(validationErrors).length === 0 &&
@@ -233,8 +245,8 @@ export default function Clientes() {
   };
 
   const handleSendWhatsApp = async (dni: string) => {
+    const toastId = toast.loading('Enviando información por WhatsApp...');
     try {
-      toast.loading('Enviando información por WhatsApp...');
       
       // Obtener token de autenticación
       const token = localStorage.getItem('auth_token');
@@ -242,7 +254,7 @@ export default function Clientes() {
         throw new Error('No hay sesión activa');
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/clientes/send-info/${dni}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/whatsapp/send-client-info/${dni}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -257,11 +269,14 @@ export default function Clientes() {
         throw new Error('Error al enviar información');
       }
 
-      toast.success('Información enviada por WhatsApp exitosamente');
+      toast.success('Información enviada por WhatsApp exitosamente', {
+      id: toastId,
+    });
+
     } catch (error) {
       console.error('Error al enviar WhatsApp:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al enviar información por WhatsApp';
-      toast.error(errorMessage);
+      toast.error(errorMessage, { id: toastId  });
     }
   };
 
@@ -481,14 +496,14 @@ export default function Clientes() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="dni">DNI *</Label>
+                <Label htmlFor="dni">DNI o CE *</Label>
                 <div className="relative">
                   <Input
                     id="dni"
                     value={formData.dni}
                     onChange={(e) => handleInputChange('dni', e.target.value.replace(/\D/g, ''))}
-                    maxLength={8}
-                    placeholder="12345678"
+                    maxLength={10}
+                    placeholder="DNI: 12345678 o CE: 1234567890"
                     className={validationErrors.dni ? 'border-destructive pr-10' : 'pr-10'}
                     required
                   />
@@ -496,7 +511,7 @@ export default function Clientes() {
                     {dniValidating && (
                       <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                     )}
-                    {!dniValidating && dniAvailable === true && formData.dni.length === 8 && (
+                    {!dniValidating && dniAvailable === true && ((/^\d{8}$/.test(formData.dni)) || (/^\d{1,10}$/.test(formData.dni))) && (
                       <Check className="h-4 w-4 text-green-500" />
                     )}
                     {!dniValidating && dniAvailable === false && (
