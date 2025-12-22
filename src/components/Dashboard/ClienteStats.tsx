@@ -84,14 +84,32 @@ export default function ClienteStats() {
   // Función para formatear moneda
   const formatCurrency = (amount: number) => `S/${amount.toFixed(2)}`;
 
-  // Función para formatear fecha
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-PE', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+ // Función para formatear fechas DATE e ISO sin errores de zona horaria
+const formatDate = (dateString: string) => {
+  if (!dateString) return '';
+
+  let date: Date;
+
+  // 🟢 Caso 1: DATE puro → "YYYY-MM-DD"
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    const [year, month, day] = dateString.split('-').map(Number);
+    date = new Date(year, month - 1, day);
+  } 
+  // 🔵 Caso 2: ISO → "YYYY-MM-DDTHH:mm:ss.sssZ"
+  else {
+    date = new Date(dateString);
+  }
+
+  if (isNaN(date.getTime())) return 'Fecha inválida';
+
+  return date.toLocaleDateString('es-PE', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
+
 
   const buscarEstadisticas = async () => {
     if (!clienteDni.trim()) {
@@ -236,8 +254,8 @@ export default function ClienteStats() {
                         <p className="font-medium">{clienteData.cliente.telefono}</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">Edad:</p>
-                        <p className="font-medium">{clienteData.cliente.edad} años</p>
+                        <p className="text-muted-foreground">Fecha Nacimiento:</p>
+                        <p className="font-medium">{clienteData.cliente.fechaNacimiento}</p>
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">

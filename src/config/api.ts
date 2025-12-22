@@ -56,7 +56,7 @@ export const API_ENDPOINTS = {
     BASE: '/clientes',
     BY_ID: (id: number) => `/clientes/${id}`,
     SEARCH: '/clientes/search',
-    BIRTHDAYS: '/clientes/cumpleañeros',
+    BIRTHDAYS: '/clientes/cumpleaneros',
     TOP: '/clientes/top',
     BY_DNI: (dni: string) => `/clientes/dni/${dni}`,
     BY_CODE: (codigo: string) => `/clientes/codigo/${codigo}`,

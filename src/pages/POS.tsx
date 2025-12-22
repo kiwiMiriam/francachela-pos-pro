@@ -394,7 +394,7 @@ export default function POS() {
                                 onClick={() => handleSelectClient(client)}
                               >
                                 <div className="text-left">
-                                  <div className="text-sm font-medium">{client.nombres}</div>
+                                  <div className="text-sm font-medium">{client.nombres} {client.esCumpleañosHoy ? <span className="text-green-500">🎂</span> : ''}</div>
                                   <div className="text-xs text-muted-foreground">
                                     {client.codigoCorto || client.dni} • {client.puntosAcumulados} pts
                                   </div>
