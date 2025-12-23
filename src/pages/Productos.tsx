@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Plus, Pencil, Trash2, Search, ArrowUpDown, FileSpreadsheet, RefreshCw, Filter } from "lucide-react";
+import { Package, Plus, Pencil, Trash2, Search, ArrowUpDown, FileSpreadsheet, RefreshCw, Filter, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from '@/hooks/useProducts';
 import { inventoryService } from '@/services/inventoryService';
@@ -16,6 +16,7 @@ import { validateProductName, validateBarcode, validatePrice, validateQuantity }
 import type { Product, InventoryMovement } from "@/types";
 import { ProductCategory, ProductSupplier } from "@/types";
 import { ProductForm } from '../components/productos/ProductForm';
+import { Label } from '@/components/ui/label';
 
 interface ProductValidationErrors {
   productoDescripcion?: string;
@@ -146,7 +147,7 @@ export default function Productos() {
       // Adaptar al response esperado: { movimientos: [], totalMovimientos: number }
       if (data && typeof data === 'object' && 'movimientos' in data) {
         setMovimientosHoy(data.movimientos || []);
-        setTotalMovimientosHoy(data.totalMovimientos || 0);
+        setTotalMovimientosHoy(data.length || 0);
       } else if (Array.isArray(data)) {
         setMovimientosHoy(data);
         setTotalMovimientosHoy(data.length);
@@ -202,19 +203,21 @@ export default function Productos() {
 
     setIsLoadingMovimientosRango(true);
     try {
-      const fechaInicio = `${fechaInicioMovimientos} 00:00:00`;
-      const fechaFin = `${fechaFinMovimientos} 23:59:59`;
+      const startDate = `${fechaInicioMovimientos} 00:00:00`;
+      const endDate = `${fechaFinMovimientos} 23:59:59`;
       
-      const data = await inventoryService.getByDateRange({ fechaInicio, fechaFin });
+      const response = await inventoryService.getByDateRange({ startDate, endDate });
       
-      // Response es array simple según especificación
-      if (Array.isArray(data)) {
-        setMovimientosRango(data);
-      } else {
-        setMovimientosRango([]);
+      // Response es { data: [], total, page, ... }
+      let movements: any[] = [];
+      if (response && typeof response === 'object' && 'data' in response) {
+        movements = (response as any).data || [];
+      } else if (Array.isArray(response)) {
+        movements = response;
       }
       
-      toast.success(`Se encontraron ${data?.length || 0} movimientos en el rango seleccionado`);
+      setMovimientosRango(movements);
+      toast.success(`Se encontraron ${movements.length} movimientos en el rango seleccionado`);
     } catch (error) {
       console.error('Error loading movements by date range:', error);
       setMovimientosRango([]);
@@ -356,20 +359,13 @@ export default function Productos() {
     return baseValid;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!isFormValid()) {
-      toast.error('Por favor corrige los errores en el formulario');
-      return;
-    }
-    
+  const handleSubmit = async (formDataToSubmit: any) => {
     try {
       // Preparar datos para envío - si no usa inventario, enviar stock en 0
       const dataToSend = {
-        ...formData,
-        cantidadActual: formData.usaInventario ? formData.cantidadActual : 0,
-        cantidadMinima: formData.usaInventario ? formData.cantidadMinima : 0,
+        ...formDataToSubmit,
+        cantidadActual: formDataToSubmit.usaInventario ? formDataToSubmit.cantidadActual : 0,
+        cantidadMinima: formDataToSubmit.usaInventario ? formDataToSubmit.cantidadMinima : 0,
       };
 
       if (editingProduct) {
