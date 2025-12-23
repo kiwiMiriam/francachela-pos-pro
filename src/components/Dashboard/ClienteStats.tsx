@@ -67,32 +67,59 @@ interface ClienteResponse {
 }
 
 export default function ClienteStats() {
-  const [clienteId, setClienteId] = useState('');
+  const [clienteDni, setClienteDni] = useState('');
   const [clienteData, setClienteData] = useState<ClienteResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
+  // Estados para Top Clientes
+  const [topClientes, setTopClientes] = useState<ClienteData[]>([]);
+  const [limitTopClientes, setLimitTopClientes] = useState(5);
+  const [isLoadingTopClientes, setIsLoadingTopClientes] = useState(false);
+
+  // Estados para Clientes Cumpleañeros
+  const [clientesCumpleaneros, setClientesCumpleaneros] = useState<ClienteData[]>([]);
+  const [isLoadingCumpleaneros, setIsLoadingCumpleaneros] = useState(false);
+
   // Función para formatear moneda
   const formatCurrency = (amount: number) => `S/${amount.toFixed(2)}`;
 
-  // Función para formatear fecha
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-PE', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+ // Función para formatear fechas DATE e ISO sin errores de zona horaria
+const formatDate = (dateString: string) => {
+  if (!dateString) return '';
+
+  let date: Date;
+
+  // 🟢 Caso 1: DATE puro → "YYYY-MM-DD"
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    const [year, month, day] = dateString.split('-').map(Number);
+    date = new Date(year, month - 1, day);
+  } 
+  // 🔵 Caso 2: ISO → "YYYY-MM-DDTHH:mm:ss.sssZ"
+  else {
+    date = new Date(dateString);
+  }
+
+  if (isNaN(date.getTime())) return 'Fecha inválida';
+
+  return date.toLocaleDateString('es-PE', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
+
 
   const buscarEstadisticas = async () => {
-    if (!clienteId.trim()) {
-      showErrorToast('Por favor ingresa un ID de cliente válido');
+    if (!clienteDni.trim()) {
+      showErrorToast('Por favor ingresa un DNI de cliente válido');
       return;
     }
 
-    const id = parseInt(clienteId.trim());
-    if (isNaN(id) || id <= 0) {
-      showErrorToast('El ID del cliente debe ser un número válido mayor a 0');
+    const dni = clienteDni.trim();
+    if (dni.length < 8) {
+      showErrorToast('El DNI debe tener al menos 8 dígitos');
       return;
     }
 
@@ -101,7 +128,7 @@ export default function ClienteStats() {
     const loadingToastId = showLoadingToast('Buscando estadísticas del cliente...');
     
     try {
-      const data = await clientsService.getEstadisticas(id);
+      const data = await clientsService.getEstadisticas(dni);
       // Validar estructura mínima de datos
       if (!data || !data.cliente) {
         throw new Error('Datos inválidos recibidos del servidor');
@@ -123,6 +150,40 @@ export default function ClienteStats() {
     }
   };
 
+  // Función para cargar Top Clientes
+  const cargarTopClientes = async () => {
+    setIsLoadingTopClientes(true);
+    const loadingToastId = showLoadingToast('Cargando top clientes...');
+    
+    try {
+      const data = await clientsService.getTopClients(limitTopClientes);
+      setTopClientes(data);
+    } catch (error) {
+      setTopClientes([]);
+      showErrorToast(error, 'Error al cargar top clientes');
+    } finally {
+      dismissToast(loadingToastId);
+      setIsLoadingTopClientes(false);
+    }
+  };
+
+  // Función para cargar Clientes Cumpleañeros
+  const cargarClientesCumpleaneros = async () => {
+    setIsLoadingCumpleaneros(true);
+    const loadingToastId = showLoadingToast('Cargando clientes cumpleañeros...');
+    
+    try {
+      const data = await clientsService.getBirthdays();
+      setClientesCumpleaneros(data);
+    } catch (error) {
+      setClientesCumpleaneros([]);
+      showErrorToast(error, 'Error al cargar clientes cumpleañeros');
+    } finally {
+      dismissToast(loadingToastId);
+      setIsLoadingCumpleaneros(false);
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -131,24 +192,23 @@ export default function ClienteStats() {
           Estadísticas de Cliente
         </CardTitle>
         
-        {/* Búsqueda por ID */}
+        {/* Búsqueda por DNI */}
         <div className="flex gap-2 items-end">
           <div className="flex-1">
-            <Label htmlFor="clienteId" className="text-xs">ID del Cliente</Label>
+            <Label htmlFor="clienteDni" className="text-xs">DNI del Cliente</Label>
             <Input
-              id="clienteId"
-              type="number"
-              placeholder="Ingresa el ID del cliente"
-              value={clienteId}
-              onChange={(e) => setClienteId(e.target.value)}
+              id="clienteDni"
+              type="text"
+              placeholder="Ingresa el DNI del cliente"
+              value={clienteDni}
+              onChange={(e) => setClienteDni(e.target.value)}
               onKeyPress={handleKeyPress}
               className="w-full"
-              min="1"
             />
           </div>
           <Button 
             onClick={buscarEstadisticas} 
-            disabled={isLoading || !clienteId.trim()}
+            disabled={isLoading || !clienteDni.trim()}
             size="sm"
           >
             <Search className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
@@ -194,8 +254,8 @@ export default function ClienteStats() {
                         <p className="font-medium">{clienteData.cliente.telefono}</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">Edad:</p>
-                        <p className="font-medium">{clienteData.cliente.edad} años</p>
+                        <p className="text-muted-foreground">Fecha Nacimiento:</p>
+                        <p className="font-medium">{clienteData.cliente.fechaNacimiento}</p>
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -375,9 +435,152 @@ export default function ClienteStats() {
         ) : (
           <div className="text-center py-8">
             <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Ingresa un ID de cliente para ver sus estadísticas</p>
+            <p className="text-muted-foreground">Ingresa un DNI de cliente para ver sus estadísticas</p>
             <p className="text-sm text-muted-foreground mt-2">
               Podrás ver métricas de compras, productos favoritos y más
+            </p>
+          </div>
+        )}
+      </CardContent>
+
+      {/* Sección de Top Clientes */}
+      <CardHeader className="border-t">
+        <CardTitle className="flex items-center gap-2">
+          <Star className="h-5 w-5" />
+          Top Clientes
+        </CardTitle>
+        
+        <div className="flex gap-2 items-end">
+          <div className="flex-1">
+            <Label htmlFor="limitTopClientes" className="text-xs">Límite</Label>
+            <Input
+              id="limitTopClientes"
+              type="number"
+              placeholder="Número de clientes"
+              value={limitTopClientes}
+              onChange={(e) => setLimitTopClientes(parseInt(e.target.value) || 5)}
+              className="w-32"
+              min="1"
+              max="50"
+            />
+          </div>
+          <Button 
+            onClick={cargarTopClientes} 
+            disabled={isLoadingTopClientes}
+            size="sm"
+          >
+            {isLoadingTopClientes ? (
+              <RefreshCw className="h-4 w-4 animate-spin mr-1" />
+            ) : (
+              <TrendingUp className="h-4 w-4 mr-1" />
+            )}
+            Cargar
+          </Button>
+        </div>
+      </CardHeader>
+
+      <CardContent>
+        {isLoadingTopClientes ? (
+          <div className="flex items-center justify-center py-8">
+            <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+            Cargando top clientes...
+          </div>
+        ) : topClientes.length > 0 ? (
+          <div className="space-y-3">
+            {topClientes.map((cliente, index) => (
+              <div key={cliente.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Badge variant="secondary" className="w-8 h-8 rounded-full flex items-center justify-center p-0">
+                    {index + 1}
+                  </Badge>
+                  <div>
+                    <p className="font-medium">{cliente.nombres} {cliente.apellidos}</p>
+                    <p className="text-sm text-muted-foreground">
+                      DNI: {cliente.dni} • {cliente.puntosAcumulados} puntos
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold text-green-600">
+                    {cliente.historialCompras?.length || 0} compras
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatCurrency(
+                      cliente.historialCompras?.reduce((sum, compra) => sum + compra.monto, 0) || 0
+                    )}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">No hay datos de top clientes</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Haz clic en "Cargar" para obtener los mejores clientes
+            </p>
+          </div>
+        )}
+      </CardContent>
+
+      {/* Sección de Clientes Cumpleañeros */}
+      <CardHeader className="border-t">
+        <CardTitle className="flex items-center gap-2">
+          <Heart className="h-5 w-5" />
+          Clientes Cumpleañeros
+        </CardTitle>
+        
+        <div className="flex gap-2">
+          <Button 
+            onClick={cargarClientesCumpleaneros} 
+            disabled={isLoadingCumpleaneros}
+            size="sm"
+          >
+            {isLoadingCumpleaneros ? (
+              <RefreshCw className="h-4 w-4 animate-spin mr-1" />
+            ) : (
+              <Calendar className="h-4 w-4 mr-1" />
+            )}
+            Cargar Cumpleañeros
+          </Button>
+        </div>
+      </CardHeader>
+
+      <CardContent>
+        {isLoadingCumpleaneros ? (
+          <div className="flex items-center justify-center py-8">
+            <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+            Cargando clientes cumpleañeros...
+          </div>
+        ) : clientesCumpleaneros.length > 0 ? (
+          <div className="space-y-3">
+            {clientesCumpleaneros.map((cliente) => (
+              <div key={cliente.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Heart className="h-6 w-6 text-red-500" />
+                  <div>
+                    <p className="font-medium">{cliente.nombres} {cliente.apellidos}</p>
+                    <p className="text-sm text-muted-foreground">
+                      DNI: {cliente.dni} • Cumpleaños: {formatDate(cliente.fechaNacimiento)}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold text-blue-600">{cliente.puntosAcumulados} puntos</p>
+                  <p className="text-sm text-muted-foreground">
+                    Tel: {cliente.telefono}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Heart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">No hay clientes cumpleañeros hoy</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Haz clic en "Cargar Cumpleañeros" para verificar
             </p>
           </div>
         )}
