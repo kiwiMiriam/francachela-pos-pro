@@ -1,35 +1,16 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  DollarSign,
-  Clock,
-  History,
-  Plus,
-  Calendar,
-  TrendingUp,
-  BarChart3,
-  FileText,
-  Lock,
-  Unlock,
-} from "lucide-react";
-import { toast } from "sonner";
-import { cashRegisterService } from "@/services/cashRegisterService";
-import type { CashRegister, VentasCorte } from "@/types";
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DollarSign, Clock, History, Plus, Calendar, TrendingUp, BarChart3, FileText, Lock, Unlock } from 'lucide-react';
+import { toast } from 'sonner';
+import { cashRegisterService } from '@/services/cashRegisterService';
+import type { CashRegister, VentasCorte } from '@/types';
 
 export default function Caja() {
   const [current, setCurrent] = useState<CashRegister | null>(null);
@@ -67,11 +48,7 @@ export default function Caja() {
     observaciones: "",
   });
 
-  useEffect(() => {
-    loadData();
-  }, [dateRange]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
 
@@ -113,7 +90,11 @@ export default function Caja() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [dateRange.fechaInicio, dateRange.fechaFin]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleOpenCash = async (e: React.FormEvent) => {
     e.preventDefault();

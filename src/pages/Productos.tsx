@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from '@/hooks/useProducts';
 import { inventoryService } from '@/services/inventoryService';
 import { productsService } from '@/services/productsService';
+import { MovimientosInventario } from '@/components/productos/MovimientosInventario';
 import { validateProductName, validateBarcode, validatePrice, validateQuantity } from '@/utils/validators';
 import type { Product, InventoryMovement } from "@/types";
 import { ProductCategory, ProductSupplier } from "@/types";
@@ -1443,6 +1444,20 @@ export default function Productos() {
               )}
             </div>
           )}
+
+          {/* Componente de Movimientos - REQUERIMIENTOS 4, 5, 6 */}
+          <MovimientosInventario
+            movimientosHoy={movimientosHoy}
+            totalMovimientosHoy={totalMovimientosHoy}
+            isLoadingMovimientosHoy={isLoadingMovimientosHoy}
+            selectedTipoMovimiento={selectedTipoMovimiento}
+            movimientosPorTipo={movimientosPorTipo}
+            isLoadingMovimientosTipo={isLoadingMovimientosTipo}
+            movimientosRango={movimientosRango}
+            isLoadingMovimientosRango={isLoadingMovimientosRango}
+            fechaInicioMovimientos={fechaInicioMovimientos}
+            fechaFinMovimientos={fechaFinMovimientos}
+          />
         </TabsContent>
       </Tabs>
 
