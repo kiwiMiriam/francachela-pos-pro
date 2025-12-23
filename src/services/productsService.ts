@@ -161,6 +161,45 @@ export const productsService = {
   },
 
   /**
+   * Obtener productos por categoría
+   */
+  getByCategory: async (categoria: string): Promise<Product[]> => {
+    try {
+      const response = await httpClient.get<PaginatedResponse<Product> | Product[]>(
+        API_ENDPOINTS.PRODUCTS.BY_CATEGORY(categoria)
+      );
+      
+      // El backend puede devolver { data: [], total, page, etc } o un array directo
+      let products: any[] = [];
+      if (response && typeof response === 'object' && 'data' in response) {
+        products = (response as PaginatedResponse<Product>).data;
+      } else if (Array.isArray(response)) {
+        products = response;
+      }
+      
+      return normalizeProducts(ensureArray(products, []));
+    } catch (error) {
+      console.error('Error getting products by category:', error);
+      throw new Error(extractErrorMessage(error));
+    }
+  },
+
+  /**
+   * Obtener categorías disponibles
+   */
+  getCategories: async (): Promise<string[]> => {
+    try {
+      const products = await productsService.getAll();
+      if (!products || products.length === 0) return [];
+      const categories = [...new Set(products.map((p: Product) => p.categoria).filter(Boolean))];
+      return categories.sort();
+    } catch (error) {
+      console.error('Error getting categories:', error);
+      throw new Error(extractErrorMessage(error));
+    }
+  },
+
+  /**
    * Obtener proveedores disponibles
    */
   getSuppliers: async (): Promise<string[]> => {

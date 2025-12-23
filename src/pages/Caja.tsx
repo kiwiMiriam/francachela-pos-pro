@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -48,11 +48,7 @@ export default function Caja() {
     observaciones: ''
   });
 
-  useEffect(() => {
-    loadData();
-  }, [dateRange]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -88,7 +84,11 @@ export default function Caja() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [dateRange.fechaInicio, dateRange.fechaFin]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleOpenCash = async (e: React.FormEvent) => {
     e.preventDefault();
